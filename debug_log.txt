@@ -1,0 +1,21 @@
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCHaHD477h-FeBbVh9Sh7syA
+RSS Response Status: 500
+RSS failed or empty, falling back to scraping videos page for UCHaHD477h-FeBbVh9Sh7syA
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCAuUUnT6oDeKwE6v1NGQxug
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: popular)
+Scrape parse error: 'gridRenderer'
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: popular)
+
+
+=== Processing Video: https://www.youtube.com/watch?v=_0bLziR6JiI (ID: _0bLziR6JiI) ===
+
+
+=== Processing Video: https://www.youtube.com/watch?v=_0bLziR6JiI (ID: _0bLziR6JiI) ===

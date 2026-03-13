@@ -1,0 +1,327 @@
+
+
+=== Processing Video: https://www.youtube.com/watch?v=aqz-KE-BPKQ (ID: aqz-KE-BPKQ) ===
+--- Fetching Metadata for aqz-KE-BPKQ ---
+oEmbed returned status: 404
+--- Fetching Transcript for aqz-KE-BPKQ ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+
+
+=== Processing Video: https://www.youtube.com/watch?v=aqz-KE-BPKQ (ID: aqz-KE-BPKQ) ===
+--- Fetching Metadata for aqz-KE-BPKQ ---
+oEmbed returned status: 404
+--- Fetching Transcript for aqz-KE-BPKQ ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=aqz-KE-BPKQ! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+
+
+=== Processing Video: https://www.youtube.com/watch?v=jKFKDl8f5ow (ID: jKFKDl8f5ow) ===
+--- Fetching Metadata for jKFKDl8f5ow ---
+oEmbed Success
+--- Fetching Transcript for jKFKDl8f5ow ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=jKFKDl8f5ow&ei=SDKyabzcI_Km2roP58WUkA8&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773311160&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=4742D2B91C013CE7351E28CA02B67E86177F4DBF.A27A26C24897214F354DF137C6582007CB75E695&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: jKFKDl8f5ow
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=jKFKDl8f5ow&ei=SzKyacSTNt7p1d8PhYrJoQo&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773311163&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=C5C747807EA6F9D44B80182314B09F9FAD084146.AEE3D37EB0F759D66517CC1CCC15B4497C87CE80&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: jKFKDl8f5ow
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=jKFKDl8f5ow&ei=TzKyacfxBO7H1d8PtPbsyAI&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773311167&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=DDED8E7894EFF62F07D04FB9D243905B0707F128.2F12159C88EB7C65278B9349547581FFCDA9C142&key=yt8&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: jKFKDl8f5ow
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCHaHD477h-FeBbVh9Sh7syA
+RSS Response Status: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug
+RSS Response Status: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug
+RSS Response Status: 500
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCHaHD477h-FeBbVh9Sh7syA
+RSS Response Status: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug
+RSS Response Status: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=https://www.youtube.com/watch?v=jKFKDl8f5ow
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for https://www.youtube.com/watch?v=jKFKDl8f5ow
+Scraping fallback failed: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCHaHD477h-FeBbVh9Sh7syA
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCHaHD477h-FeBbVh9Sh7syA
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=https://www.youtube.com/watch?v=jKFKDl8f5ow
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for https://www.youtube.com/watch?v=jKFKDl8f5ow
+Scraping fallback failed: 404
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug
+RSS Response Status: 500
+RSS failed or empty, falling back to scraping videos page for UCAuUUnT6oDeKwE6v1NGQxug
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 500
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+
+
+=== Processing Video: https://www.youtube.com/watch?v=wFRh9ibQ3B0 (ID: wFRh9ibQ3B0) ===
+--- Fetching Metadata for wFRh9ibQ3B0 ---
+
+
+=== Processing Video: https://www.youtube.com/watch?v=wFRh9ibQ3B0 (ID: wFRh9ibQ3B0) ===
+--- Fetching Metadata for wFRh9ibQ3B0 ---
+oEmbed Success
+--- Fetching Transcript for wFRh9ibQ3B0 ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=xzqyabrpJ-6hrfcPquao0As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313335&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=15351601C7EF8D1EB178FB05EB456EC4823A92A9.3445F15E3B1EAF920A295A6B99349A869CA5C74B&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=yzqyadDbE9Pp1d8PtuG0uQs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313339&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=A01F6C0D22A568C9519029AD6CEB05CF4C2245BF.6B4EC4320A87973CCF54049063DCBCDA014A9D2A&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=zjqyaZOuDNyavcAPhoqguAY&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313342&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=04E2DE1C5AE7C85E484959FD9B607C4A93983BEE.D8D997C55DEC6B5735D032DAB22E8F783E3EFFE8&key=yt8&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+
+
+=== Processing Video: https://www.youtube.com/watch?v=wFRh9ibQ3B0 (ID: wFRh9ibQ3B0) ===
+--- Fetching Metadata for wFRh9ibQ3B0 ---
+oEmbed Success
+--- Fetching Transcript for wFRh9ibQ3B0 ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=HDuyaa-SGqeSqL8P8-LG0Qs&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313420&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=91B6D60D71603F37A213E7BD96C101FCB67C7F2D.7E932E96C98069B1E5F7DDDF3C84227DCAD3B302&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=Hzuyacn8HayPrfcPr7a42AU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313423&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=E36DC64C264AD25C91C19F20474B1942BC4DE3DE.324B611E814A3581D82CD55005001DF86C3D06CE&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=IjuyaY_iCv_p1d8P-MCtmQ0&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313426&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=0752863D4AFE58B871016262542CF4A250EC2C36.185D1AEBBA528AEDDF00D8D2106BD828789737B1&key=yt8&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+
+
+=== Processing Video: https://www.youtube.com/watch?v=wFRh9ibQ3B0 (ID: wFRh9ibQ3B0) ===
+--- Fetching Metadata for wFRh9ibQ3B0 ---
+oEmbed Success
+--- Fetching Transcript for wFRh9ibQ3B0 ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=azuyabKAPa7o1d8PpJ_kiQg&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313500&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=0E18178BA9BDF9A52A28161F46F2D1A66F5275E6.AA7292C49783FDFD4BE2CA410A6DFCE72C63CBDE&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=bzuyadmuC6b0pt8PzLSVoQ0&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313503&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=9C26E2A9FE7CB7C1C0BF2EEBF52A256586A179A2.A6A9853F44B91EACF884DA0267E9B19DC6B26D43&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=cjuyaYzXC82DvcAPhMyBGA&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313506&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=23881B586D3302F9FDE0D46405FAFA3910C15BAD.A31283ACF019EA5DCCFFF5FF44A53A81791EDD00&key=yt8&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw
+RSS Response Status: 404
+RSS failed or empty, falling back to scraping videos page for UCNR06PEAvBj_siYZCBtk1hw
+Scraping success: Found 30 videos
+
+
+=== Processing Video: https://www.youtube.com/watch?v=wFRh9ibQ3B0 (ID: wFRh9ibQ3B0) ===
+--- Fetching Metadata for wFRh9ibQ3B0 ---
+oEmbed Success
+--- Fetching Transcript for wFRh9ibQ3B0 ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=PTyyaZW1Nca02roP4du3-Ao&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313709&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=1AF4F6E855BE6F2B6E51325ED9739575FDB0CA7F.50215BE74920901BDA13E703D6E433CDEE0C7B35&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=QDyyaYKoOoei2roPi5rfwQU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313712&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=8C2A9C2603C6DB15388A6F2DA522E9C957A1E8FB.22E84C6B8F968A606D367CAB1302046C7EF6E7E9&key=yt8&lang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=wFRh9ibQ3B0&ei=RDyyafykF9iWvcAPn8Tn-QU&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773313716&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=23B684183E83C9884BC4A393160CDA27341744B5.5C1FC34D805A907A5B4B57EDA48AF42E96BA6E39&key=yt8&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: wFRh9ibQ3B0
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Warning: No transcript for wFRh9ibQ3B0, added placeholder.
+Database Save Success
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UC_qs3c0ehDvZkbiEbOj6Drg (sort: newest)
+
+
+=== Processing Video: https://www.youtube.com/watch?v=_0bLziR6JiI (ID: _0bLziR6JiI) ===
+--- Fetching Metadata for _0bLziR6JiI ---
+
+
+=== Processing Video: https://www.youtube.com/watch?v=_0bLziR6JiI (ID: _0bLziR6JiI) ===
+--- Fetching Metadata for _0bLziR6JiI ---
+oEmbed Success
+--- Fetching Transcript for _0bLziR6JiI ---
+oEmbed Success
+--- Fetching Transcript for _0bLziR6JiI ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=vj6yacSqCNbp1d8P2ffD4As&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314350&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=E0C70297E3EC9940AA812E829D42B4E5D5DECD83.3C51C02669DAA5FAAFB05D0E4E6FDA40E4529699&key=yt8&kind=asr&lang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=vj6yacOXOa2y1d8P0I6e2AE&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314350&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=8FDB0E308039CF24BB38D2D6320BF485163C23A3.6151783530F9B965F2FBADBE9A79EC63E3531006&key=yt8&kind=asr&lang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Success
+Attempt 2 Success
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=wD6yabH7O-SR1d8P-5DHuQ0&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314353&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=2BED6EED1BD01314C3424C49258C41D4D4149F3D.A069BB42227DB5C52B24B310D5532A49B7B3BB47&key=yt8&kind=asr&lang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=wj6yabjHIIeCvcAPhaO7iQY&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314354&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=D90F3F50BD874AC2A36F40C2E571FC79E45E884B.35EC045F44A6B3E00C33378FB350C576F8BBE270&key=yt8&kind=asr&lang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempting translation from en
+Attempting translation from en
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=xD6yac-HHb6OrfcP7IHb-Ak&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314356&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=AFFE76C29451E192ED86EA3C28D63477B1153AB6.51B604DA73E0AE9320C7753E40FB4F10C7AF6EA6&key=yt8&kind=asr&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Warning: No transcript for _0bLziR6JiI, added placeholder.
+Database Save Success
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=429 Client Error: Too Many Requests for url: https://www.youtube.com/api/timedtext?v=_0bLziR6JiI&ei=xT6yab_sIs_tvcAP8oOhEQ&caps=asr&opi=112496729&exp=xpe&xoaf=5&xowf=1&xospf=1&hl=en&ip=0.0.0.0&ipbits=0&expire=1773314357&sparams=ip,ipbits,expire,v,ei,caps,opi,exp,xoaf&signature=708514B17B5D3EEE69218B9DE172601007F11904.898172ED666E273E10123FEFDBAD8B7DB32A4E12&key=yt8&kind=asr&lang=en&tlang=en! This is most likely caused by:
+
+Request to YouTube failed: _0bLziR6JiI
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+DB Error: (sqlite3.IntegrityError) UNIQUE constraint failed: videos.youtube_id
+[SQL: INSERT INTO videos (id, youtube_id, title, channel_name, thumbnail_url, duration_sec, difficulty, category, view_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('24f9aa49-e4c7-487d-903f-a28319f14ad8', '_0bLziR6JiI', 'Three Syllable Words  | Learn to Read and Spell for Kids | Alphablocks', 'Alphablocks', 'https://i.ytimg.com/vi/_0bLziR6JiI/hqdefault.jpg', None, None, None, 0, '2026-03-12 04:19:14.815628')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UC_qs3c0ehDvZkbiEbOj6Drg (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UC_qs3c0ehDvZkbiEbOj6Drg (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UC_qs3c0ehDvZkbiEbOj6Drg (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCNR06PEAvBj_siYZCBtk1hw (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UC_qs3c0ehDvZkbiEbOj6Drg (sort: newest)
+Fetching RSS: https://www.youtube.com/feeds/videos.xml?channel_id=UCrreHSUa5rnuCVDeO8dX4eA (sort: newest)
+
+
+=== Processing Video: https://www.youtube.com/watch?v=KvA7ivI3vQM (ID: KvA7ivI3vQM) ===
+--- Fetching Metadata for KvA7ivI3vQM ---
+oEmbed Success
+--- Fetching Transcript for KvA7ivI3vQM ---
+Attempt 1 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=KvA7ivI3vQM! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 2 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=KvA7ivI3vQM! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Attempt 3 Fail: 
+Could not retrieve a transcript for the video https://www.youtube.com/watch?v=KvA7ivI3vQM! This is most likely caused by:
+
+Subtitles are disabled for this video
+
+If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!
+Database Save Success

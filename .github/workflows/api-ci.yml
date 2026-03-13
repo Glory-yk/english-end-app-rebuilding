@@ -1,0 +1,58 @@
+name: API CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'english-learning-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: english_app
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: english_app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: english-learning-api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: english-learning-api/package-lock.json
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+        env:
+          DATABASE_URL: postgresql://english_app:test_password@localhost:5432/english_app_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
+      - run: npm run build

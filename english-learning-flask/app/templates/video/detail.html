@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Video Player Column -->
+        <div class="lg:w-2/3">
+            <div class="aspect-video bg-black rounded-lg overflow-hidden mb-4 relative shadow-2xl">
+                <!-- Standard YT Player Placeholder -->
+                <div id="player"></div>
+                
+                <div id="player-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-6 text-center z-10">
+                    <div class="bg-gray-800 p-8 rounded-3xl shadow-2xl border-2 border-red-500 max-w-sm">
+                        <h3 class="text-2xl font-bold mb-2 text-red-400">Embedding Restricted</h3>
+                        <p class="text-gray-400 mb-6">The owner allows playback only on YouTube or official partners.</p>
+
+                        <div class="flex flex-col gap-3">
+                            <!-- EBS Option for specific brands -->
+                            {% set ebs_brands = ['Alphablocks', 'Numberblocks', 'Peppa Pig'] %}
+                            {% set is_ebs_available = false %}
+                            {% for brand in ebs_brands %}
+                                {% if brand.lower() in video.channel_name.lower() or brand.lower() in video.title.lower() %}
+                                    {% set is_ebs_available = true %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if is_ebs_available %}
+                            <a href="https://www.ebs.co.kr/" 
+                               target="_blank" 
+                               onclick="startExternalTimer('EBS')"
+                               class="bg-green-600 px-6 py-3 rounded-full font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2">
+                                <span>Watch on EBS 📺</span>
+                            </a>
+                            {% endif %}
+
+                            <a href="https://www.youtube.com/watch?v={{ video.youtube_id }}" 
+                               target="_blank" 
+                               onclick="startExternalTimer('YouTube')"
+                               class="bg-blue-600 px-6 py-3 rounded-full font-bold hover:bg-blue-700 transition shadow-lg">
+                                Watch on YouTube ↗️
+                            </a>
+                            <button onclick="toggleFloatingGuide()" class="text-sm text-blue-400 underline">How to study this video?</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- Floating Guide (Hidden) -->
+            <div id="study-guide" class="hidden bg-blue-50 border-2 border-blue-200 p-4 rounded-2xl mb-6">
+                <h4 class="font-bold text-blue-800 mb-2">💡 How to study restricted videos:</h4>
+                <ol class="text-sm text-blue-700 list-decimal ml-5 space-y-1">
+                    <li>Click <b>'Open in New Tab'</b> to watch the video on YouTube.</li>
+                    <li>Come back to this page – the <b>Subtitles</b> on the right are already loaded!</li>
+                    <li>Click any word in the subtitles to save it to your vocabulary while watching.</li>
+                </ol>
+            </div>
+
+
+            <h1 class="text-2xl font-bold mb-2">{{ video.title }}</h1>
+            <p class="text-gray-600 mb-6">{{ video.channel_name }}</p>
+        </div>
+
+        <!-- Subtitles Sidebar -->
+        <div class="lg:w-1/3">
+            <div class="bg-white rounded-lg shadow-lg flex flex-col h-[70vh]">
+                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                    <h2 class="text-xl font-bold">Subtitles</h2>
+                </div>
+                <div id="subtitle-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    {% for sub in subtitles %}
+                    <div class="subtitle-item p-3 rounded-lg border border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors" 
+                         data-start="{{ sub.start_ms }}" data-end="{{ sub.end_ms }}">
+                        <p class="text-gray-800 text-lg">
+                            {% for word in sub.text.split() %}
+                            <span class="hover:text-blue-600 hover:font-bold transition-all px-0.5 rounded cursor-help" 
+                                  onclick="addWord('{{ word | replace("'", "\\'") | replace(".", "") | replace(",", "") | replace("?", "") }}', '{{ video.id }}'); event.stopPropagation();">
+                                {{ word }}
+                            </span>
+                            {% endfor %}
+                        </p>
+                        <button class="text-xs text-blue-400 mt-2 hover:underline" onclick="seekTo({{ sub.start_ms / 1000 }})">Jump to here</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Timer and Session Logic
+    let externalStartTime = null;
+    let externalPlatform = "";
+    let internalWatchTime = 0;
+    let watchInterval = null;
+
+    function startExternalTimer(platform) {
+        externalStartTime = Date.now();
+        externalPlatform = platform;
+        showToast(`Learning on ${platform} started! Come back here to save your time. ⏱️`);
+    }
+
+    // Detect return from YouTube/EBS
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible' && externalStartTime) {
+            const durationSec = Math.floor((Date.now() - externalStartTime) / 1000);
+            if (durationSec > 5) { // Only record if more than 5 seconds
+                const timeStr = durationSec >= 60 
+                    ? `${Math.floor(durationSec/60)}m ${durationSec%60}s` 
+                    : `${durationSec}s`;
+                
+                if (confirm(`Welcome back! You were studying on ${externalPlatform} for ${timeStr}. Save this to your stats?`)) {
+                    saveLearningSession(durationSec);
+                }
+            }
+            externalStartTime = null; 
+            externalPlatform = "";
+        }
+    });
+
+    function saveLearningSession(seconds) {
+        fetch('{{ url_for("video.record_session") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                video_id: '{{ video.id }}',
+                duration: seconds
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(`Saved ${seconds}s to your learning history! 🎉`);
+        });
+    }
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = "fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-2xl z-[100] font-bold animate-bounce text-center";
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Load YouTube API
+    var tag = document.createElement('script');
+
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    let player;
+
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
+            videoId: '{{ video.youtube_id }}',
+            playerVars: {
+                'autoplay': 1,
+                'mute': 0,
+                'playsinline': 1,
+                'rel': 0,
+                'modestbranding': 1,
+                'enablejsapi': 1,
+                'origin': window.location.origin  // Crucial for fixing Error 153
+            },
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    }
+
+    function toggleFloatingGuide() {
+        const guide = document.getElementById('study-guide');
+        guide.classList.toggle('hidden');
+    }
+
+    function onPlayerError(event) {
+        const errorMsg = document.getElementById('error-message');
+        const errorContainer = document.getElementById('player-error');
+        errorContainer.classList.remove('hidden');
+        
+        switch(event.data) {
+            case 2: errorMsg.innerText = "Invalid video ID."; break;
+            case 5: errorMsg.innerText = "HTML5 player error."; break;
+            case 100: errorMsg.innerText = "Video not found or private."; break;
+            case 101: 
+            case 150: errorMsg.innerText = "Playback restricted by owner (Embedding disabled)."; break;
+            default: errorMsg.innerText = "An unknown error occurred."; break;
+        }
+    }
+
+    function seekTo(seconds) {
+        player.seekTo(seconds, true);
+        player.playVideo();
+    }
+
+    function addWord(word, videoId) {
+        fetch('{{ url_for("vocab.add_word") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: word, video_id: videoId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // 간단한 알림 효과
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl z-50 animate-bounce";
+            toast.innerText = data.message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            if (!watchInterval) {
+                watchInterval = setInterval(() => {
+                    internalWatchTime += 1;
+                    updateActiveSubtitle();
+                    // Sync every 30s
+                    if (internalWatchTime % 30 === 0) saveLearningSession(30);
+                }, 1000);
+            }
+        } else {
+            if (watchInterval) {
+                clearInterval(watchInterval);
+                watchInterval = null;
+                // Save remaining time if > 5s
+                if (internalWatchTime % 30 > 5) saveLearningSession(internalWatchTime % 30);
+            }
+        }
+    }
+
+    function updateActiveSubtitle() {
+        if (!player) return;
+        const currentTimeMs = player.getCurrentTime() * 1000;
+        const items = document.querySelectorAll('.subtitle-item');
+        
+        items.forEach(item => {
+            const start = parseInt(item.getAttribute('data-start'));
+            const end = parseInt(item.getAttribute('data-end'));
+            
+            if (currentTimeMs >= start && currentTimeMs <= end) {
+                item.classList.add('bg-blue-100', 'border-blue-300', 'active-sub');
+                // Scroll into view if not visible
+                if (item.classList.contains('active-sub')) {
+                    // (Additional scrolling logic could go here)
+                }
+            } else {
+                item.classList.remove('bg-blue-100', 'border-blue-300', 'active-sub');
+            }
+        });
+    }
+</script>
+{% endblock %}

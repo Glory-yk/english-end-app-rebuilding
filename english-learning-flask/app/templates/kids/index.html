@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngLearn Kids 🎈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+        body { font-family: 'Gaegu', 'Comic Sans MS', cursive; background-color: #FFF9C4; }
+        .channel-card.active { border-color: #F59E0B; background-color: #FEF3C7; transform: scale(1.05); }
+        .video-card { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .video-card:hover { transform: translateY(-10px) rotate(1deg); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+    <!-- Kids Nav -->
+    <nav class="bg-yellow-400 p-4 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-4xl font-black text-white" style="text-shadow: 3px 3px 0 #d97706;">EngLearn Kids 🎈</div>
+            <div class="flex items-center gap-4">
+                <span class="hidden md:block font-bold text-orange-800 text-xl">Hi, {{ profile.name }}! 👋</span>
+                <a href="{{ url_for('main.index') }}" class="bg-white text-orange-600 px-6 py-2 rounded-full font-bold shadow-lg hover:bg-orange-50 transition border-b-4 border-gray-200 active:border-b-0 active:translate-y-1">Exit 🏠</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- Channel Selection Section -->
+        <div class="mb-10">
+            <h2 class="text-3xl font-bold text-orange-600 mb-4 flex items-center gap-2">
+                <span>Pick a Channel!</span> 📺
+            </h2>
+            <div class="flex gap-6 overflow-x-auto pb-4 hide-scrollbar">
+                {% for channel in channels %}
+                <button onclick="selectChannel('{{ channel.youtube_channel_id }}', this)" 
+                        class="channel-card flex-shrink-0 w-32 md:w-40 bg-white rounded-3xl p-4 shadow-lg border-4 border-white transition-all {{ 'active' if loop.first }}">
+                    <div class="w-20 h-20 md:w-24 md:h-24 bg-blue-100 rounded-full mx-auto mb-3 flex items-center justify-center overflow-hidden">
+                        <span class="text-4xl">🎬</span>
+                    </div>
+                    <p class="font-bold text-gray-800 text-center truncate">{{ channel.name }}</p>
+                </button>
+                {% else %}
+                <div class="bg-white p-8 rounded-3xl shadow-md w-full text-center">
+                    <p class="text-xl text-gray-500">Ask your parents to add some fun channels! 🍭</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Video Filter & Display Section -->
+        <div id="video-explorer" class="{{ 'hidden' if not channels }}">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 id="current-channel-name" class="text-3xl font-bold text-blue-600">
+                    Watching: {{ first_channel.name if first_channel else 'Videos' }}
+                </h2>
+                <div class="flex bg-white rounded-full p-1 shadow-inner border-2 border-yellow-200">
+                    <button onclick="changeSort('newest')" id="btn-newest" class="sort-btn px-6 py-2 rounded-full font-bold transition-all bg-yellow-400 text-white shadow-md">Latest ✨</button>
+                    <button onclick="changeSort('popular')" id="btn-popular" class="sort-btn px-6 py-2 rounded-full font-bold transition-all text-gray-500 hover:bg-yellow-50">Popular 🔥</button>
+                </div>
+            </div>
+
+            <!-- Video Grid -->
+            <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <!-- Videos will be injected here -->
+                {% for video in initial_videos %}
+                <div class="video-card bg-white rounded-[2.5rem] shadow-xl overflow-hidden border-4 border-yellow-200 relative">
+                    <form action="{{ url_for('video.add') }}" method="POST">
+                        <input type="hidden" name="url" value="https://www.youtube.com/watch?v={{ video.id }}">
+                        <button type="submit" class="w-full text-left">
+                            <div class="relative">
+                                <img src="{{ video.thumbnail_url }}" class="w-full h-48 object-cover">
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                                    <span class="text-6xl">▶️</span>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-bold text-gray-800 line-clamp-2 leading-snug mb-4 h-14">{{ video.title }}</h3>
+                                <div class="bg-orange-500 text-white text-center font-bold py-3 rounded-2xl shadow-[0_4px_0_#c2410c]">Play Now!</div>
+                            </div>
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading-trigger" class="py-12 flex justify-center items-center">
+                <div id="spinner" class="hidden w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChannelId = '{{ first_channel.youtube_channel_id if first_channel else "" }}';
+        let currentSort = 'newest';
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMore = true;
+
+        function selectChannel(channelId, element) {
+            if (currentChannelId === channelId) return;
+            
+            // UI Update
+            document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('current-channel-name').innerText = "Watching: " + element.querySelector('p').innerText;
+            
+            // State Update
+            currentChannelId = channelId;
+            currentPage = 1;
+            hasMore = true;
+            
+            // Refresh Videos
+            loadVideos(true);
+        }
+
+        function changeSort(sort) {
+            if (currentSort === sort) return;
+            
+            // UI Update
+            document.querySelectorAll('.sort-btn').forEach(b => {
+                b.classList.remove('bg-yellow-400', 'text-white', 'shadow-md');
+                b.classList.add('text-gray-500', 'hover:bg-yellow-50');
+            });
+            const activeBtn = document.getElementById('btn-' + sort);
+            activeBtn.classList.remove('text-gray-500', 'hover:bg-yellow-50');
+            activeBtn.classList.add('bg-yellow-400', 'text-white', 'shadow-md');
+            
+            // State Update
+            currentSort = sort;
+            currentPage = 1;
+            hasMore = true;
+            
+            // Refresh Videos
+            loadVideos(true);
+        }
+
+        async function loadVideos(isNew = false) {
+            if (isLoading || (!hasMore && !isNew)) return;
+            
+            isLoading = true;
+            const grid = document.getElementById('video-grid');
+            const spinner = document.getElementById('spinner');
+            spinner.classList.remove('hidden');
+            
+            if (isNew) {
+                grid.innerHTML = '';
+                currentPage = 1;
+            }
+
+            try {
+                const response = await fetch(`/kids/channel/${currentChannelId}/videos?sort=${currentSort}&page=${currentPage}`);
+                const data = await response.json();
+                
+                if (data.videos.length === 0) {
+                    hasMore = false;
+                    if (isNew) grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400">No videos found here! 🎈</div>';
+                } else {
+                    data.videos.forEach(video => {
+                        const card = createVideoCard(video);
+                        grid.appendChild(card);
+                    });
+                    currentPage++;
+                    hasMore = data.has_more;
+                }
+            } catch (error) {
+                console.error("Failed to load videos:", error);
+            } finally {
+                isLoading = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function createVideoCard(video) {
+            const div = document.createElement('div');
+            div.className = 'video-card bg-white rounded-[2.5rem] shadow-xl overflow-hidden border-4 border-yellow-200 relative';
+            div.innerHTML = `
+                <form action="/video/add" method="POST">
+                    <input type="hidden" name="url" value="https://www.youtube.com/watch?v=${video.id}">
+                    <button type="submit" class="w-full text-left">
+                        <div class="relative">
+                            <img src="${video.thumbnail_url}" class="w-full h-48 object-cover">
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                                <span class="text-6xl">▶️</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-gray-800 line-clamp-2 leading-snug mb-4 h-14">${video.title}</h3>
+                            <div class="bg-orange-500 text-white text-center font-bold py-3 rounded-2xl shadow-[0_4px_0_#c2410c]">Play Now!</div>
+                        </div>
+                    </button>
+                </form>
+            `;
+            return div;
+        }
+
+        // Infinite Scroll Implementation
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoading && hasMore) {
+                loadVideos();
+            }
+        }, { threshold: 0.1 });
+
+        observer.observe(document.getElementById('loading-trigger'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{{ url_for('channels.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-bold hover:bg-gray-300 transition">Back to My Channels</a>
+        <h1 class="text-3xl font-bold">{{ channel.name }} - Recent Videos</h1>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for video in videos %}
+        <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow border border-gray-100 flex flex-col">
+            <img src="{{ video.thumbnail_url }}" class="w-full h-40 object-cover">
+            <div class="p-4 flex-1">
+                <h3 class="font-bold text-lg mb-4 line-clamp-3 leading-tight">{{ video.title }}</h3>
+                <form action="{{ url_for('video.add') }}" method="POST" onsubmit="showLoading(this)">
+                    <input type="hidden" name="url" value="https://www.youtube.com/watch?v={{ video.id }}">
+                    <button type="submit" 
+                            class="learn-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm shadow transform active:scale-95 transition flex items-center justify-center gap-2">
+                        <span>Learn Now ✨</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full py-12 text-center text-gray-500">
+            No recent videos found. Maybe the channel is inactive?
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="global-loading" class="hidden fixed inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-[100] text-white">
+    <div class="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <h2 class="text-2xl font-bold mb-2">Preparing Your Lesson</h2>
+    <p class="text-gray-300">Fetching subtitles and video metadata...</p>
+    <p class="text-gray-400 text-sm mt-4 italic">This usually takes 5-10 seconds.</p>
+</div>
+
+<script>
+    function showLoading(form) {
+        const btn = form.querySelector('.learn-btn');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        document.getElementById('global-loading').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

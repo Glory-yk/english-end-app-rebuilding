@@ -1,0 +1,148 @@
+import { DataSource } from 'typeorm';
+import { Video } from '../../src/videos/entities/video.entity';
+
+export async function seedVideos(dataSource: DataSource): Promise<void> {
+  const repo = dataSource.getRepository(Video);
+
+  const videos: Partial<Video>[] = [
+    {
+      youtube_id: 'hFZFjoX2cGg',
+      title: 'Learn English Speaking Easily Quickly | English Conversation Practice Easy',
+      channel_name: 'English Easy Practice',
+      thumbnail_url: 'https://img.youtube.com/vi/hFZFjoX2cGg/hqdefault.jpg',
+      duration_sec: 1802,
+      difficulty: 'easy',
+      age_group: 'adult',
+      category: 'conversation',
+      tags: 'speaking,daily,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'juKd26qkNAw',
+      title: 'Peppa Pig - The Playgroup (full episode)',
+      channel_name: 'Peppa Pig - Official Channel',
+      thumbnail_url: 'https://img.youtube.com/vi/juKd26qkNAw/hqdefault.jpg',
+      duration_sec: 300,
+      difficulty: 'easy',
+      age_group: '3y,6y',
+      category: 'kids_animation',
+      tags: 'peppa,kids,cartoon,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'UF8uR6Z6KLc',
+      title: 'Steve Jobs 2005 Stanford Commencement Address',
+      channel_name: 'Stanford',
+      thumbnail_url: 'https://img.youtube.com/vi/UF8uR6Z6KLc/hqdefault.jpg',
+      duration_sec: 912,
+      difficulty: 'medium',
+      age_group: 'adult',
+      category: 'speech',
+      tags: 'speech,motivation,intermediate',
+      subtitle_lang: 'en,ko',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'arj7oStGLkU',
+      title: 'TED-Ed: How do vaccines work?',
+      channel_name: 'TED-Ed',
+      thumbnail_url: 'https://img.youtube.com/vi/arj7oStGLkU/hqdefault.jpg',
+      duration_sec: 273,
+      difficulty: 'medium',
+      age_group: '6y,adult',
+      category: 'education',
+      tags: 'science,ted-ed,intermediate',
+      subtitle_lang: 'en,ko',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'nKIu9yen5nc',
+      title: 'The Art of Stress-Free Productivity | David Allen | TEDxClawortemontCollege',
+      channel_name: 'TEDx Talks',
+      thumbnail_url: 'https://img.youtube.com/vi/nKIu9yen5nc/hqdefault.jpg',
+      duration_sec: 890,
+      difficulty: 'hard',
+      age_group: 'adult',
+      category: 'ted_talk',
+      tags: 'productivity,ted,advanced',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'e4bpg8VBcB8',
+      title: 'Cocomelon - Bath Song | ABCkidTV Nursery Rhymes',
+      channel_name: 'Cocomelon',
+      thumbnail_url: 'https://img.youtube.com/vi/e4bpg8VBcB8/hqdefault.jpg',
+      duration_sec: 196,
+      difficulty: 'easy',
+      age_group: '1y,3y',
+      category: 'nursery_rhyme',
+      tags: 'baby,song,nursery,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'mSB71jNq-yQ',
+      title: 'Curious George Full Episode - Buoy Wonder',
+      channel_name: 'Curious George Official',
+      thumbnail_url: 'https://img.youtube.com/vi/mSB71jNq-yQ/hqdefault.jpg',
+      duration_sec: 720,
+      difficulty: 'easy',
+      age_group: '3y,6y',
+      category: 'kids_animation',
+      tags: 'curious george,kids,cartoon,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'YqQx75OPRa0',
+      title: 'English Conversation Practice - 100 Common Questions and Answers',
+      channel_name: 'Shaw English Online',
+      thumbnail_url: 'https://img.youtube.com/vi/YqQx75OPRa0/hqdefault.jpg',
+      duration_sec: 2400,
+      difficulty: 'easy',
+      age_group: 'adult',
+      category: 'conversation',
+      tags: 'conversation,practice,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'Unzc731iCUY',
+      title: 'TED-Ed: How languages evolve',
+      channel_name: 'TED-Ed',
+      thumbnail_url: 'https://img.youtube.com/vi/Unzc731iCUY/hqdefault.jpg',
+      duration_sec: 254,
+      difficulty: 'medium',
+      age_group: '6y,adult',
+      category: 'education',
+      tags: 'language,ted-ed,intermediate',
+      subtitle_lang: 'en,ko',
+      view_count: 0,
+    },
+    {
+      youtube_id: 'ljqra3BcqWM',
+      title: "Super Simple Songs - Baby Shark",
+      channel_name: 'Super Simple Songs',
+      thumbnail_url: 'https://img.youtube.com/vi/ljqra3BcqWM/hqdefault.jpg',
+      duration_sec: 120,
+      difficulty: 'easy',
+      age_group: '1y,3y',
+      category: 'nursery_rhyme',
+      tags: 'baby shark,song,kids,beginner',
+      subtitle_lang: 'en',
+      view_count: 0,
+    },
+  ];
+
+  for (const video of videos) {
+    const exists = await repo.findOne({ where: { youtube_id: video.youtube_id } });
+    if (!exists) {
+      await repo.save(repo.create(video));
+    }
+  }
+
+  console.log(`Seeded ${videos.length} videos`);
+}

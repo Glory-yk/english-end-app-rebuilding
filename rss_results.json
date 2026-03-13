@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCAuUUnT6oDeKwE6v1NGQxug",
+    "status": 500
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?user=TEDEducation",
+    "status": 500
+  },
+  {
+    "url": "https://www.youtube.com/feeds/videos.xml?playlist_id=UUAuUUnT6oDeKwE6v1NGQxug",
+    "status": 404
+  }
+]

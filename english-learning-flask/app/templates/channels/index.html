@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">My Subscribed Channels</h1>
+        <button onclick="document.getElementById('add-channel-modal').classList.remove('hidden')" 
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+            + Add Channel
+        </button>
+    </div>
+
+    <!-- Predefined Learning Channels -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {% for channel in channels %}
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center">
+            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <span class="text-2xl">📺</span>
+            </div>
+            <h3 class="font-bold text-xl mb-1">{{ channel.name }}</h3>
+            <p class="text-sm text-gray-500 mb-4">{{ channel.youtube_channel_id }}</p>
+            
+            <div class="flex flex-col gap-2 w-full">
+                <a href="{{ url_for('channels.view', channel_id=channel.id) }}" 
+                   class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition text-center">
+                    View Videos
+                </a>
+                
+                <div class="flex justify-center gap-4 mt-2">
+                    <button onclick="openEditModal('{{ channel.id }}', '{{ channel.name }}')" 
+                            class="text-sm text-blue-600 hover:underline">Edit Name</button>
+                    
+                    <form action="{{ url_for('channels.delete', channel_id=channel.id) }}" method="POST" 
+                          onsubmit="return confirm('Are you sure you want to unsubscribe from {{ channel.name }}?');">
+                        <button type="submit" class="text-sm text-red-600 hover:underline">Unsubscribe</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full py-12 text-center text-gray-500">
+            No channels added yet. Try adding some learning channels!
+        </div>
+        {% endfor %}
+    </div>
+
+    <hr class="my-12">
+
+    <!-- Recommended Channels -->
+    <h2 class="text-2xl font-bold mb-6">Recommended Channels</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow border border-gray-100">
+            <h3 class="font-bold text-lg">Super Simple Play</h3>
+            <p class="text-sm text-gray-600 mb-4">Great for kids learning English</p>
+            <form action="{{ url_for('channels.add') }}" method="POST">
+                <input type="hidden" name="channel_id" value="UCNR06PEAvBj_siYZCBtk1hw">
+                <input type="hidden" name="name" value="Super Simple Play">
+                <button type="submit" class="text-blue-600 font-bold">Add to My Channels</button>
+            </form>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow border border-gray-100">
+            <h3 class="font-bold text-lg">TED-Ed</h3>
+            <p class="text-sm text-gray-600 mb-4">Educational content with clear audio</p>
+            <form action="{{ url_for('channels.add') }}" method="POST">
+                <input type="hidden" name="channel_id" value="UCAuUUnT6oDeKwE6v1NGQxug">
+                <input type="hidden" name="name" value="TED-Ed">
+                <button type="submit" class="text-blue-600 font-bold">Add to My Channels</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Channel Modal -->
+    <div id="add-channel-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <h2 class="text-xl font-bold mb-4">Add Channel Manually</h2>
+            <form action="{{ url_for('channels.add') }}" method="POST">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Channel ID or URL</label>
+                    <input type="text" name="channel_id" placeholder="e.g. UCHaHD477h... or URL" class="w-full px-4 py-2 border rounded" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2">Channel Name</label>
+                    <input type="text" name="name" placeholder="BBC Learning English" class="w-full px-4 py-2 border rounded" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('add-channel-modal').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 shadow-md">Add Channel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Channel Modal -->
+    <div id="edit-channel-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <h2 class="text-xl font-bold mb-4">Edit Channel Name</h2>
+            <form id="edit-channel-form" method="POST">
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2">New Name</label>
+                    <input type="text" id="edit-channel-name" name="name" class="w-full px-4 py-2 border rounded" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('edit-channel-modal').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 shadow-md">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openEditModal(channelId, currentName) {
+            const modal = document.getElementById('edit-channel-modal');
+            const form = document.getElementById('edit-channel-form');
+            const nameInput = document.getElementById('edit-channel-name');
+            
+            // Set form action dynamically
+            form.action = "{{ url_for('channels.index') }}edit/" + channelId;
+            nameInput.value = currentName;
+            
+            modal.classList.remove('hidden');
+        }
+    </script>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Vocabulary Review</h1>
+        <p class="text-gray-600 font-bold">Words Due: {{ count }}</p>
+    </div>
+
+    <div class="max-w-2xl mx-auto">
+        {% for word in words %}
+        <div id="card-{{ word.id }}" class="card-item {% if not loop.first %}hidden{% endif %}">
+            <div class="bg-white rounded-xl shadow-2xl p-8 min-h-[400px] flex flex-col justify-center items-center text-center">
+                <div class="mb-8">
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Original Word</p>
+                    <h2 class="text-5xl font-black text-blue-600">{{ word.vocabulary.word }}</h2>
+                    <p class="text-gray-500 mt-2 italic">Pronunciation Loading...</p>
+                </div>
+
+                <!-- Answer Section (Hidden by default) -->
+                <div id="answer-{{ word.id }}" class="hidden w-full border-t pt-8 mt-8">
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Korean Meaning</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mb-6">{{ word.vocabulary.meaning_ko }}</h3>
+                    
+                    <div class="grid grid-cols-6 gap-2">
+                        {% for q in range(6) %}
+                        <button hx-post="{{ url_for('vocab.submit_answer', word_id=word.id) }}" 
+                                hx-vals='{"quality": {{ q }}}'
+                                hx-target="#card-{{ word.id }}"
+                                hx-swap="outerHTML"
+                                onclick="showNextCard()"
+                                class="py-3 px-1 rounded-lg text-white font-bold transition-transform active:scale-95
+                                {% if q == 0 %}bg-red-600{% elif q == 1 %}bg-red-400{% elif q == 2 %}bg-orange-400{% elif q == 3 %}bg-yellow-400{% elif q == 4 %}bg-green-400{% else %}bg-green-600{% endif %}">
+                            {{ q }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button id="show-btn-{{ word.id }}" 
+                        onclick="document.getElementById('answer-{{ word.id }}').classList.remove('hidden'); this.classList.add('hidden')"
+                        class="mt-8 bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700">
+                    Show Meaning
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl shadow p-12 text-center">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">You're All Caught Up! 🎉</h2>
+            <p class="text-gray-600 mb-8">No words due for review right now. Go watch some videos to learn more!</p>
+            <a href="{{ url_for('video.index') }}" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full">Explore Videos</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function showNextCard() {
+        const currentCards = document.querySelectorAll('.card-item:not(.hidden)');
+        if (currentCards.length > 0) {
+            const nextCard = currentCards[0].nextElementSibling;
+            if (nextCard && nextCard.classList.contains('card-item')) {
+                setTimeout(() => {
+                    nextCard.classList.remove('hidden');
+                }, 100);
+            }
+        }
+    }
+</script>
+{% endblock %}
