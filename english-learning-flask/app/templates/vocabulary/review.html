@@ -107,6 +107,15 @@
             <a href="{{ url_for('video.index') }}" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full">Explore Videos</a>
         </div>
         {% endfor %}
+
+        <!-- Keyboard shortcuts hint bar (only shown when there are cards) -->
+        {% if words %}
+        <div id="kb-hints" class="mt-5 flex justify-center flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400 select-none" aria-label="Keyboard shortcuts">
+            <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Space</kbd> Reveal</span>
+            <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1 – 6</kbd> Rate quality</span>
+            <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> Replay audio</span>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -160,6 +169,53 @@
         if (firstCard && autoSpeak) {
             const word = firstCard.dataset.word;
             if (word) setTimeout(() => speakWord(word), 400);
+        }
+    });
+
+    // --- Keyboard shortcuts ---
+    // Space / → : reveal answer
+    // 1–6       : rate quality (maps to quality 0–5)
+    // R         : replay pronunciation
+    document.addEventListener('keydown', (e) => {
+        // Don't intercept when user is typing in an input
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+        const currentCard = document.querySelector('.card-item:not(.hidden)');
+        if (!currentCard) return;
+
+        const cardId = currentCard.id.replace('card-', '');
+        const answerDiv = document.getElementById('answer-' + cardId);
+        const showBtn  = document.getElementById('show-btn-' + cardId);
+        const answerVisible = answerDiv && !answerDiv.classList.contains('hidden');
+
+        if (e.code === 'Space' || e.code === 'ArrowRight') {
+            // Reveal answer when hidden; do nothing if already shown
+            if (!answerVisible && showBtn) {
+                e.preventDefault();
+                showBtn.click();
+            }
+        } else if (!answerVisible && (e.code === 'ArrowLeft')) {
+            // ArrowLeft while hidden: no-op (prevent page scroll)
+            e.preventDefault();
+        } else if (answerVisible) {
+            // 1–6 triggers quality buttons (quality 0–5)
+            const keyMap = {
+                'Digit1': 0, 'Digit2': 1, 'Digit3': 2,
+                'Digit4': 3, 'Digit5': 4, 'Digit6': 5
+            };
+            if (e.code in keyMap) {
+                e.preventDefault();
+                const qualityBtns = currentCard.querySelectorAll('button[hx-vals]');
+                const btn = qualityBtns[keyMap[e.code]];
+                if (btn) btn.click();
+            }
+        }
+
+        // R replays pronunciation regardless of answer state
+        if (e.code === 'KeyR') {
+            e.preventDefault();
+            const word = currentCard.dataset.word;
+            if (word) speakWord(word);
         }
     });
 </script>

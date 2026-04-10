@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 09:00 - [Accessibility/UX] Keyboard shortcuts for vocabulary flashcard review
+Added keyboard shortcuts to the SRS review page so users never need to reach for the mouse: Space (or →) reveals the answer, keys 1–6 submit quality ratings 0–5, and R replays the word's pronunciation. A discoverable hint bar below the card deck labels all three shortcuts using styled `<kbd>` elements. Input-focused elements are guarded so shortcuts don't fire while the user types in the auto-pronounce toggle checkbox area.
+
 ## 2026-04-10 07:00 - [Bug Fix / UX] Fix video player error UI crash + implement subtitle auto-scroll
 Fixed a JS `TypeError` in `onPlayerError` where `document.getElementById('error-message')` returned `null` (the element was missing from the HTML), crashing silently on every embedding-restricted video — the most common error users encounter. Added `id="error-title"` and `id="error-message"` elements to the error overlay and updated `onPlayerError` to populate them with error-code-specific messages (cases 2, 5, 100, 101/150). Also implemented the long-standing TODO in `updateActiveSubtitle`: the subtitle sidebar now smoothly scrolls to centre the currently playing line on every subtitle transition, using a first-change guard to avoid redundant `scrollTo` calls.
 
