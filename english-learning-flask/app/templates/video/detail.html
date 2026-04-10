@@ -11,8 +11,8 @@
                 
                 <div id="player-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-6 text-center z-10">
                     <div class="bg-gray-800 p-8 rounded-3xl shadow-2xl border-2 border-red-500 max-w-sm">
-                        <h3 class="text-2xl font-bold mb-2 text-red-400">Embedding Restricted</h3>
-                        <p class="text-gray-400 mb-6">The owner allows playback only on YouTube or official partners.</p>
+                        <h3 id="error-title" class="text-2xl font-bold mb-2 text-red-400">Video Unavailable</h3>
+                        <p id="error-message" class="text-gray-400 mb-6">This video cannot be played here.</p>
 
                         <div class="flex flex-col gap-3">
                             <!-- EBS Option for specific brands -->
@@ -179,17 +179,32 @@
     }
 
     function onPlayerError(event) {
+        const errorTitle = document.getElementById('error-title');
         const errorMsg = document.getElementById('error-message');
         const errorContainer = document.getElementById('player-error');
         errorContainer.classList.remove('hidden');
-        
+
         switch(event.data) {
-            case 2: errorMsg.innerText = "Invalid video ID."; break;
-            case 5: errorMsg.innerText = "HTML5 player error."; break;
-            case 100: errorMsg.innerText = "Video not found or private."; break;
-            case 101: 
-            case 150: errorMsg.innerText = "Playback restricted by owner (Embedding disabled)."; break;
-            default: errorMsg.innerText = "An unknown error occurred."; break;
+            case 2:
+                errorTitle.innerText = 'Invalid Video';
+                errorMsg.innerText = 'The video ID is invalid.';
+                break;
+            case 5:
+                errorTitle.innerText = 'Playback Error';
+                errorMsg.innerText = 'An HTML5 player error occurred.';
+                break;
+            case 100:
+                errorTitle.innerText = 'Video Not Found';
+                errorMsg.innerText = 'This video is private or has been removed.';
+                break;
+            case 101:
+            case 150:
+                errorTitle.innerText = 'Embedding Restricted';
+                errorMsg.innerText = 'The owner allows playback only on YouTube or official partners.';
+                break;
+            default:
+                errorTitle.innerText = 'Video Unavailable';
+                errorMsg.innerText = 'An unknown error occurred (' + event.data + ').';
         }
     }
 
@@ -239,16 +254,24 @@
         if (!player) return;
         const currentTimeMs = player.getCurrentTime() * 1000;
         const items = document.querySelectorAll('.subtitle-item');
-        
+        const container = document.getElementById('subtitle-list');
+
         items.forEach(item => {
             const start = parseInt(item.getAttribute('data-start'));
             const end = parseInt(item.getAttribute('data-end'));
-            
+
             if (currentTimeMs >= start && currentTimeMs <= end) {
-                item.classList.add('bg-blue-100', 'border-blue-300', 'active-sub');
-                // Scroll into view if not visible
-                if (item.classList.contains('active-sub')) {
-                    // (Additional scrolling logic could go here)
+                // Only trigger scroll when transitioning to a new active item
+                if (!item.classList.contains('active-sub')) {
+                    item.classList.add('bg-blue-100', 'border-blue-300', 'active-sub');
+
+                    // Scroll the subtitle panel so the active line is centred
+                    const itemTop = item.offsetTop;
+                    const itemHeight = item.offsetHeight;
+                    const containerHeight = container.clientHeight;
+                    const targetScrollTop = itemTop - (containerHeight / 2) + (itemHeight / 2);
+
+                    container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
                 }
             } else {
                 item.classList.remove('bg-blue-100', 'border-blue-300', 'active-sub');

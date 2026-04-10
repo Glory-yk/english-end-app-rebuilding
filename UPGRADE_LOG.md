@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 07:00 - [Bug Fix / UX] Fix video player error UI crash + implement subtitle auto-scroll
+Fixed a JS `TypeError` in `onPlayerError` where `document.getElementById('error-message')` returned `null` (the element was missing from the HTML), crashing silently on every embedding-restricted video — the most common error users encounter. Added `id="error-title"` and `id="error-message"` elements to the error overlay and updated `onPlayerError` to populate them with error-code-specific messages (cases 2, 5, 100, 101/150). Also implemented the long-standing TODO in `updateActiveSubtitle`: the subtitle sidebar now smoothly scrolls to centre the currently playing line on every subtitle transition, using a first-change guard to avoid redundant `scrollTo` calls.
+
 ## 2026-04-10 06:00 - [Code Quality] Replace file-based debug logging with Python logging module
 Removed the custom `YouTubeService.log_debug()` method that appended raw text to `debug_log.txt` on every API call, replacing all 10 call sites with proper `logger.debug/info/warning/error()` calls using a module-level `logging.getLogger(__name__)`. Configured `basicConfig` in the app factory so log output is formatted and routed correctly. Also fixed a critical `NameError` bug in `video.py` where `jsonify` was used in the `record-session` endpoint but missing from the Flask imports.
 
