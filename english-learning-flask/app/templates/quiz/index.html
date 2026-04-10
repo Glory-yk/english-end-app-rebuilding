@@ -3,7 +3,10 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold">My Quizzes</h1>
+        <div>
+            <h1 class="text-3xl font-bold">Quiz Hub</h1>
+            <p class="text-gray-500 mt-1">Test your knowledge and sharpen your English.</p>
+        </div>
         <form method="POST" action="{{ url_for('quiz.generate', video_id='sample_id') }}" class="inline">
             <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-md transition">
                 + Generate AI Quiz (Demo)
@@ -11,22 +14,66 @@
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for quiz in quizzes %}
-        <div class="bg-white rounded-xl shadow p-6 border-t-4 border-purple-500">
-            <div class="flex justify-between items-start mb-4">
-                <span class="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded">{{ quiz.type|upper }}</span>
-                <span class="text-sm text-gray-500">{{ quiz.created_at.strftime('%Y-%m-%d') }}</span>
+    <!-- Vocabulary Challenge card (always visible) -->
+    <div class="mb-10">
+        <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">Ready to Play</h2>
+        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-4xl">🧠</span>
+                    <h3 class="text-2xl font-black">Vocabulary Challenge</h3>
+                </div>
+                <p class="text-indigo-200 text-sm mb-4 max-w-sm">
+                    Pick the right Korean meaning for up to 10 words drawn from your personal wordbook.
+                    Instant feedback, pronunciation, and a missed-words review at the end.
+                </p>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Multiple choice</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Up to 10 questions</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Keyboard shortcuts</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Pronunciation</span>
+                </div>
             </div>
-            <h3 class="text-xl font-bold mb-2 text-gray-800">Quiz ID: {{ quiz.id[:8] }}</h3>
-            <p class="text-gray-600 text-sm mb-4">Difficulty: Level {{ quiz.difficulty }}</p>
-            <button class="w-full bg-gray-100 text-gray-800 font-bold py-2 rounded hover:bg-gray-200 transition">Start Quiz</button>
+            {% if word_count >= 4 %}
+            <a href="{{ url_for('quiz.vocab_challenge') }}"
+               class="shrink-0 bg-white text-indigo-600 font-black py-4 px-10 rounded-full text-lg hover:bg-indigo-50 transition shadow-lg">
+                Start Quiz →
+            </a>
+            {% else %}
+            <div class="shrink-0 text-center">
+                <p class="text-indigo-200 text-sm mb-2">Need at least 4 words in your wordbook</p>
+                <a href="{{ url_for('vocab.index') }}"
+                   class="inline-block bg-white text-indigo-600 font-bold py-3 px-6 rounded-full hover:bg-indigo-50 transition">
+                    Add Words →
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="col-span-full bg-white rounded-xl shadow p-12 text-center">
-            <p class="text-gray-500 text-lg">No quizzes available. Watch a video and generate a quiz to test your knowledge!</p>
-        </div>
-        {% endfor %}
     </div>
+
+    <!-- AI-generated quizzes section -->
+    {% if quizzes %}
+    <div>
+        <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">AI-Generated Quizzes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for quiz in quizzes %}
+            <div class="bg-white rounded-xl shadow p-6 border-t-4 border-purple-500">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded">{{ quiz.type|upper }}</span>
+                    <span class="text-sm text-gray-500">{{ quiz.created_at.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <h3 class="text-xl font-bold mb-2 text-gray-800">Quiz ID: {{ quiz.id[:8] }}</h3>
+                <p class="text-gray-600 text-sm mb-4">Difficulty: Level {{ quiz.difficulty }}</p>
+                <button class="w-full bg-gray-100 text-gray-800 font-bold py-2 rounded hover:bg-gray-200 transition">Start Quiz</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow p-8 text-center text-gray-400 border border-dashed border-gray-200">
+        <p class="text-lg mb-2">No AI quizzes yet.</p>
+        <p class="text-sm">Watch a video and use "Generate AI Quiz" to create video-based quizzes.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

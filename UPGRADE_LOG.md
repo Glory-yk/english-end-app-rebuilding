@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 16:30 - [Feature] Vocabulary Challenge quiz from personal wordbook
+Added a fully functional multiple-choice vocabulary quiz (`/quiz/vocab-challenge`) that pulls up to 10 random words from the user's wordbook, presents each English word with 4 Korean-meaning options (1 correct + 3 random distractors), gives instant color-coded feedback, pronounces words via Web Speech API, supports keyboard shortcuts (1–4 choose, Enter next, R replay), and shows a scored results screen with a missed-words review list. The Quiz Hub index was redesigned to showcase the new quiz as a prominent gradient card with a word-count guard (requires ≥4 words) and the quiz route now passes `word_count` to the template.
+
 ## 2026-04-10 15:30 - [Learning Mode] Grammar pattern extraction from video subtitles
 Added a dedicated Grammar Pattern Analysis page (`/video/<id>/grammar`) that scans a video's subtitle lines with regex and groups real in-context examples into six categories: Modal Verbs, Passive Voice, Conditional Sentences, Present Perfect, Comparatives & Superlatives, and Question Forms. Each example highlights the matched phrase in yellow using HTML-safe server-side rendering (`markupsafe`). A summary banner shows the number of pattern types found, total examples, and subtitle lines scanned. An empty state is shown for videos with too few subtitles. A green "📖 Grammar Patterns" button was added to the video detail page button row alongside the existing learning mode buttons.
 
