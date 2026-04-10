@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 19:00 - [Quiz] Sentence Scramble quiz from watched-video subtitles
+Added a fully interactive Sentence Scramble quiz (`/quiz/sentence-scramble`) that samples up to 8 subtitle lines from the user's watched videos, scrambles the words, and challenges them to tap the words back into the correct order. Includes per-word colour-coded feedback (green = right position, red strikethrough = wrong), auto-pronunciation of the correct sentence via Web Speech API, a missed-sentences review on the results screen, and keyboard shortcuts (Space check/next, Backspace undo, C clear). The Quiz Hub index was redesigned as a two-column card grid that displays both the Vocabulary Challenge and the new Sentence Scramble side by side.
+
 ## 2026-04-10 18:00 - [Bug Fix / Performance] Fix "Unknown Video" in dashboard + N+1 query + stats date crash
 Added `video = db.relationship('Video', foreign_keys=[video_id])` to `LearningSession` so the Recent Activity section on the dashboard correctly shows real video titles instead of always showing "Unknown Video". Added `joinedload(LearningSession.video)` to the recent-sessions query to load all 5 session videos in a single JOIN instead of 5 separate SELECT calls (eliminates N+1). Also fixed a `AttributeError` crash in the stats page where `func.date()` returns a plain string on SQLite — `row.date.strftime()` now guards with an `isinstance` check so both SQLite (string) and PostgreSQL (date object) are handled correctly.
 

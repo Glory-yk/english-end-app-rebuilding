@@ -2,9 +2,11 @@ import json
 import random
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models.progress import Quiz
+from app.models.progress import Quiz, LearningSession
 from app.models.profile import Profile
 from app.models.vocabulary import UserVocabulary
+from app.models.video import Subtitle
+from app import db
 
 quiz_bp = Blueprint('quiz', __name__)
 
@@ -73,4 +75,71 @@ def vocab_challenge():
         'quiz/vocab_challenge.html',
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
+    )
+
+
+@quiz_bp.route('/sentence-scramble')
+@login_required
+def sentence_scramble():
+    """Sentence scramble: rearrange subtitle words into the correct order."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    # Find videos the user has actually watched
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    if not watched_video_ids:
+        flash("Watch some videos first to unlock Sentence Scramble!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Pull subtitles from those videos (exclude system markers)
+    all_subs = (
+        Subtitle.query
+        .filter(Subtitle.video_id.in_(watched_video_ids))
+        .all()
+    )
+
+    # Good sentences: 4–12 words, not system messages, longer than 20 chars
+    good_subs = [
+        s for s in all_subs
+        if not s.text.startswith('[System:')
+        and 4 <= len(s.text.split()) <= 12
+        and len(s.text.strip()) > 20
+    ]
+
+    if len(good_subs) < 3:
+        flash("Not enough subtitle content yet. Watch more videos to unlock this quiz!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    sample_size = min(8, len(good_subs))
+    selected = random.sample(good_subs, sample_size)
+
+    sentences = []
+    for sub in selected:
+        original = sub.text.strip()
+        words = original.split()
+        shuffled = words[:]
+        # Keep shuffling until order differs (only possible with >1 word)
+        attempts = 0
+        while shuffled == words and len(words) > 1 and attempts < 20:
+            random.shuffle(shuffled)
+            attempts += 1
+        sentences.append({
+            'original': original,
+            'words': words,
+            'shuffled': shuffled,
+        })
+
+    return render_template(
+        'quiz/sentence_scramble.html',
+        sentences_json=json.dumps(sentences, ensure_ascii=False),
+        total=len(sentences),
     )

@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Sentence Scramble</h1>
+                <p class="text-gray-500 text-sm mt-1">Tap the words in the correct order to rebuild the sentence.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div id="progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p class="text-right text-xs text-gray-400 mb-6">
+            Sentence <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 text-center">
+                Tap words to place them — tap again to remove
+            </p>
+
+            <!-- Answer area: user builds the sentence here -->
+            <div id="answer-area"
+                 class="min-h-[72px] flex flex-wrap gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl mb-6 items-start content-start transition-colors">
+            </div>
+
+            <!-- Scrambled word pool -->
+            <div id="word-pool" class="flex flex-wrap gap-2 mb-8 min-h-[44px]"></div>
+
+            <!-- Feedback -->
+            <div id="feedback" class="hidden text-center py-3 px-4 rounded-xl font-semibold text-sm mb-4"></div>
+
+            <!-- Action buttons -->
+            <div class="flex gap-3 justify-center flex-wrap">
+                <button id="clear-btn" onclick="clearAnswer()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-5 rounded-lg transition text-sm">
+                    Clear
+                </button>
+                <button id="check-btn" onclick="checkAnswer()"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-8 rounded-lg transition">
+                    Check ✓
+                </button>
+                <button id="next-btn" onclick="nextQuestion()"
+                        class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg transition">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-2"></h2>
+            <p id="result-sub" class="text-gray-500 mb-6"></p>
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <span class="text-5xl font-black text-emerald-600" id="result-score"></span>
+                <span class="text-gray-400 text-lg">/ {{ total }}</span>
+            </div>
+
+            <!-- Missed sentences review -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Sentences to revisit:</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.sentence_scramble') }}"
+                   class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition">
+                    Play Again
+                </a>
+                <a href="{{ url_for('quiz.vocab_challenge') }}"
+                   class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition">
+                    Vocab Challenge →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+
+        <!-- Keyboard shortcuts hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Space</kbd> check / next &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Backspace</kbd> undo last word &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">C</kbd> clear all
+        </p>
+    </div>
+</div>
+
+<script>
+const SENTENCES = {{ sentences_json|safe }};
+let current = 0;
+let score = 0;
+let answered = false;
+const missed = [];
+
+// selectedIndices: ordered list of indices into shuffled[] that the user has picked
+let selectedIndices = [];
+let shuffled = [];
+
+// ── Speech ────────────────────────────────────────────────────────────────────
+function speakText(text) {
+    if (!text || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderQuestion() {
+    const q = SENTENCES[current];
+    answered = false;
+    selectedIndices = [];
+    shuffled = [...q.shuffled];
+
+    document.getElementById('q-num').textContent = current + 1;
+    const pct = (current / SENTENCES.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    const fb = document.getElementById('feedback');
+    fb.classList.add('hidden');
+    fb.className = 'hidden text-center py-3 px-4 rounded-xl font-semibold text-sm mb-4';
+
+    document.getElementById('next-btn').classList.add('hidden');
+    document.getElementById('check-btn').classList.remove('hidden');
+    document.getElementById('clear-btn').classList.remove('hidden');
+
+    document.getElementById('answer-area').classList.remove('border-green-400', 'border-red-400');
+    document.getElementById('answer-area').classList.add('border-gray-300');
+
+    renderWordPool();
+    renderAnswerArea();
+}
+
+function renderWordPool() {
+    const pool = document.getElementById('word-pool');
+    pool.innerHTML = '';
+    shuffled.forEach((word, idx) => {
+        if (selectedIndices.includes(idx)) return; // already placed
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'py-2 px-4 rounded-full border-2 border-blue-200 bg-blue-50 text-blue-800 font-semibold text-sm hover:border-blue-500 hover:bg-blue-100 transition-all';
+        chip.setAttribute('aria-label', 'Add word: ' + word);
+        chip.textContent = word;
+        chip.onclick = () => selectWord(idx);
+        pool.appendChild(chip);
+    });
+}
+
+function renderAnswerArea() {
+    const area = document.getElementById('answer-area');
+    area.innerHTML = '';
+
+    if (selectedIndices.length === 0) {
+        const ph = document.createElement('span');
+        ph.className = 'text-gray-300 text-sm italic self-center w-full text-center';
+        ph.textContent = 'Tap words above to build your sentence…';
+        area.appendChild(ph);
+        return;
+    }
+
+    selectedIndices.forEach((wordIdx, pos) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'answer-chip py-2 px-4 rounded-full border-2 border-emerald-300 bg-emerald-50 text-emerald-800 font-semibold text-sm hover:border-red-400 hover:bg-red-50 hover:text-red-700 transition-all';
+        chip.setAttribute('aria-label', 'Remove word: ' + shuffled[wordIdx]);
+        chip.textContent = shuffled[wordIdx];
+        chip.onclick = () => { if (!answered) deselectWord(pos); };
+        area.appendChild(chip);
+    });
+}
+
+// ── Interaction ───────────────────────────────────────────────────────────────
+function selectWord(idx) {
+    if (answered) return;
+    selectedIndices.push(idx);
+    renderWordPool();
+    renderAnswerArea();
+}
+
+function deselectWord(pos) {
+    selectedIndices.splice(pos, 1);
+    renderWordPool();
+    renderAnswerArea();
+}
+
+function clearAnswer() {
+    if (answered) return;
+    selectedIndices = [];
+    renderWordPool();
+    renderAnswerArea();
+}
+
+function checkAnswer() {
+    if (answered) return;
+
+    const q = SENTENCES[current];
+
+    // Remind user to place all words
+    if (selectedIndices.length < q.words.length) {
+        const fb = document.getElementById('feedback');
+        fb.className = 'text-center py-3 px-4 rounded-xl font-semibold text-sm mb-4 bg-yellow-100 text-yellow-700';
+        fb.textContent = 'Place all ' + q.words.length + ' words before checking!';
+        fb.classList.remove('hidden');
+        return;
+    }
+
+    answered = true;
+
+    const userWords = selectedIndices.map(i => shuffled[i]);
+    const isCorrect = userWords.join(' ') === q.original;
+
+    if (isCorrect) {
+        score++;
+    } else {
+        missed.push(q.original);
+    }
+
+    // Colour-code each placed word chip
+    const area = document.getElementById('answer-area');
+    area.classList.remove('border-gray-300');
+    area.classList.add(isCorrect ? 'border-green-400' : 'border-red-400');
+
+    const chips = area.querySelectorAll('.answer-chip');
+    chips.forEach((chip, pos) => {
+        chip.onclick = null;
+        const placedWord = userWords[pos];
+        const expectedWord = q.words[pos];
+        if (placedWord === expectedWord) {
+            chip.className = 'answer-chip py-2 px-4 rounded-full border-2 border-green-500 bg-green-100 text-green-900 font-bold text-sm';
+        } else {
+            chip.className = 'answer-chip py-2 px-4 rounded-full border-2 border-red-400 bg-red-50 text-red-700 font-semibold text-sm line-through';
+        }
+    });
+
+    // Build feedback element (DOM only — no innerHTML with user data)
+    const fb = document.getElementById('feedback');
+    fb.innerHTML = '';
+    if (isCorrect) {
+        fb.className = 'text-center py-3 px-4 rounded-xl font-semibold text-sm mb-4 bg-green-100 text-green-700';
+        fb.appendChild(document.createTextNode('✓ Correct! '));
+        const hearBtn = document.createElement('button');
+        hearBtn.className = 'underline';
+        hearBtn.textContent = '🔊 Hear it';
+        hearBtn.onclick = () => speakText(q.original);
+        fb.appendChild(hearBtn);
+    } else {
+        fb.className = 'text-center py-3 px-4 rounded-xl font-semibold text-sm mb-4 bg-red-100 text-red-700';
+        fb.appendChild(document.createTextNode('✗ Correct order: '));
+        const em = document.createElement('em');
+        em.className = 'font-normal text-gray-700';
+        em.textContent = q.original;
+        fb.appendChild(em);
+        const hearBtn = document.createElement('button');
+        hearBtn.className = 'underline ml-1 text-red-600';
+        hearBtn.textContent = ' 🔊';
+        hearBtn.onclick = () => speakText(q.original);
+        fb.appendChild(hearBtn);
+    }
+    fb.classList.remove('hidden');
+
+    document.getElementById('check-btn').classList.add('hidden');
+    document.getElementById('clear-btn').classList.add('hidden');
+    document.getElementById('next-btn').classList.remove('hidden');
+
+    // Auto-pronounce the correct sentence
+    speakText(q.original);
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= SENTENCES.length) {
+        showResults();
+    } else {
+        renderQuestion();
+    }
+}
+
+function showResults() {
+    document.getElementById('quiz-card').classList.add('hidden');
+    document.getElementById('results-screen').classList.remove('hidden');
+    document.getElementById('progress-bar').style.width = '100%';
+
+    document.getElementById('result-score').textContent = score;
+    const pct = Math.round((score / SENTENCES.length) * 100);
+
+    let emoji, heading, sub;
+    if (pct === 100) {
+        emoji = '🏆'; heading = 'Perfect Score!'; sub = 'You nailed every sentence — incredible!';
+    } else if (pct >= 75) {
+        emoji = '🎉'; heading = 'Great Job!'; sub = 'You\'re mastering English word order.';
+    } else if (pct >= 50) {
+        emoji = '💪'; heading = 'Good Effort!'; sub = 'Keep practising — word order takes time.';
+    } else {
+        emoji = '📖'; heading = 'Keep Studying!'; sub = 'Try again and focus on the sentence structure.';
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    if (missed.length > 0) {
+        document.getElementById('missed-section').classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(sentence => {
+            const li = document.createElement('li');
+            li.className = 'bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm text-gray-700 flex items-center justify-between gap-3';
+            const em = document.createElement('em');
+            em.textContent = '\u201c' + sentence + '\u201d';
+            li.appendChild(em);
+            const btn = document.createElement('button');
+            btn.className = 'shrink-0 text-blue-500 hover:text-blue-700 text-lg';
+            btn.setAttribute('aria-label', 'Hear sentence');
+            btn.textContent = '🔊';
+            btn.onclick = () => speakText(sentence);
+            li.appendChild(btn);
+            list.appendChild(li);
+        });
+    }
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.code === 'Space') {
+        e.preventDefault();
+        if (!answered) {
+            document.getElementById('check-btn').click();
+        } else {
+            document.getElementById('next-btn').click();
+        }
+    }
+    if (e.code === 'Backspace' && !answered) {
+        e.preventDefault();
+        if (selectedIndices.length > 0) {
+            selectedIndices.pop();
+            renderWordPool();
+            renderAnswerArea();
+        }
+    }
+    if (e.code === 'KeyC' && !answered) {
+        e.preventDefault();
+        clearAnswer();
+    }
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+renderQuestion();
+</script>
+{% endblock %}
