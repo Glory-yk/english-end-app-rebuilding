@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 20:00 - [UI/UX] Live search, status filter, and column sort for vocabulary wordbook
+Added a live-search input and five status-filter pills (All / New / Learning / Review / Mastered) above the wordbook table, each showing a real-time count badge. Clicking a column header (Word, Status, Next Review) sorts the visible rows ascending/descending with a directional arrow indicator. All filtering and sorting run entirely in the browser — zero backend changes — and a "Showing X of Y words" counter and a "no results" empty state keep the user oriented when searches return nothing.
+
 ## 2026-04-10 19:00 - [Quiz] Sentence Scramble quiz from watched-video subtitles
 Added a fully interactive Sentence Scramble quiz (`/quiz/sentence-scramble`) that samples up to 8 subtitle lines from the user's watched videos, scrambles the words, and challenges them to tap the words back into the correct order. Includes per-word colour-coded feedback (green = right position, red strikethrough = wrong), auto-pronunciation of the correct sentence via Web Speech API, a missed-sentences review on the results screen, and keyboard shortcuts (Space check/next, Backspace undo, C clear). The Quiz Hub index was redesigned as a two-column card grid that displays both the Vocabulary Challenge and the new Sentence Scramble side by side.
 
