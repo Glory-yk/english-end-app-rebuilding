@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 00:03 - [Dashboard] Word of the Day widget
+Added a prominent gradient banner to the dashboard that surfaces one vocabulary word per day (deterministic: same word all day, different each day via date+profile MD5 seed). Shows word, phonetic, POS badge, Korean meaning, and example sentence, with a direct "Review Now" CTA. Falls back to an empty-state CTA when the user's wordbook is empty.
+
 ## 2026-04-10 00:02 - [UI/UX] Mobile-responsive hamburger navigation
 Replaced the single-row desktop-only nav in base.html with a responsive layout: desktop keeps the original horizontal links, while mobile gets a hamburger button that toggles a full-width dropdown menu via vanilla JS. Affects every page and every mobile user.
 

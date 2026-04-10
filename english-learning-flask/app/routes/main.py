@@ -1,3 +1,4 @@
+import hashlib
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from sqlalchemy import func, case
@@ -40,6 +41,14 @@ def index():
         ).scalar()
         avg_quiz_pct = round(avg_quiz_raw * 100) if avg_quiz_raw is not None else None
 
+        # Word of the Day: deterministic pick based on date + profile id
+        today_str = datetime.utcnow().date().isoformat()
+        all_words = UserVocabulary.query.filter_by(profile_id=profile.id).all()
+        word_of_day = None
+        if all_words:
+            seed = int(hashlib.md5(f"{today_str}-{profile.id}".encode()).hexdigest(), 16)
+            word_of_day = all_words[seed % len(all_words)]
+
         return render_template('main/dashboard.html',
                                profile=profile,
                                sessions=recent_sessions,
@@ -47,7 +56,8 @@ def index():
                                goal_min=goal_min,
                                goal_pct=goal_pct,
                                mastered_count=mastered_count,
-                               avg_quiz_pct=avg_quiz_pct)
+                               avg_quiz_pct=avg_quiz_pct,
+                               word_of_day=word_of_day)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
