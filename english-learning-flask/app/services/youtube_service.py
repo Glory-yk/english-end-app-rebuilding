@@ -1,4 +1,5 @@
 import logging
+import time
 import requests
 import re
 import os
@@ -9,6 +10,12 @@ from app.models.video import Video, Subtitle, Channel
 from app import db
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache for channel video lists.  Avoids a fresh HTTP round-trip
+# (RSS or scrape, typically 2–15 s) on every Kids / Channel page load.
+# Key: "{channel_id}:{sort_by}"  Value: (fetched_at_timestamp, video_list)
+_channel_video_cache: dict = {}
+_CACHE_TTL_SEC: int = 300  # 5 minutes
 
 class YouTubeService:
     @staticmethod
@@ -71,10 +78,25 @@ class YouTubeService:
 
     @staticmethod
     def fetch_channel_videos(channel_id, sort_by='newest'):
+        """Return channel videos, serving from the in-memory cache when fresh."""
+        cache_key = f"{channel_id}:{sort_by}"
+        entry = _channel_video_cache.get(cache_key)
+        if entry:
+            fetched_at, data = entry
+            if time.time() - fetched_at < _CACHE_TTL_SEC:
+                logger.debug("Cache hit for channel %s (sort: %s)", channel_id, sort_by)
+                return data
+
+        videos = YouTubeService._fetch_channel_videos_live(channel_id, sort_by)
+        _channel_video_cache[cache_key] = (time.time(), videos)
+        return videos
+
+    @staticmethod
+    def _fetch_channel_videos_live(channel_id, sort_by='newest'):
         """Fetch latest videos from a channel via RSS feed with a scraping fallback and sorting."""
         # RSS doesn't support sorting well, so for popularity we might jump straight to scraping
         rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-        logger.debug("Fetching channel videos for %s (sort: %s)", channel_id, sort_by)
+        logger.debug("Live-fetching channel videos for %s (sort: %s)", channel_id, sort_by)
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

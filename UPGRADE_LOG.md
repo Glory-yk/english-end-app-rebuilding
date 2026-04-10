@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 17:00 - [Performance] In-memory TTL cache for YouTube channel video fetching
+`YouTubeService.fetch_channel_videos` previously made a live HTTP request (RSS or page-scrape, 2–15 s) on every Kids-mode and Channel-view page load. Added a module-level dict cache with a 5-minute TTL so repeated page loads within the window return immediately without hitting YouTube. The existing fetch logic was extracted into `_fetch_channel_videos_live`; the public `fetch_channel_videos` now checks/stores the cache as a thin wrapper. No new dependencies required.
+
 ## 2026-04-10 16:30 - [Feature] Vocabulary Challenge quiz from personal wordbook
 Added a fully functional multiple-choice vocabulary quiz (`/quiz/vocab-challenge`) that pulls up to 10 random words from the user's wordbook, presents each English word with 4 Korean-meaning options (1 correct + 3 random distractors), gives instant color-coded feedback, pronounces words via Web Speech API, supports keyboard shortcuts (1–4 choose, Enter next, R replay), and shows a scored results screen with a missed-words review list. The Quiz Hub index was redesigned to showcase the new quiz as a prominent gradient card with a word-count guard (requires ≥4 words) and the quiz route now passes `word_count` to the template.
 
