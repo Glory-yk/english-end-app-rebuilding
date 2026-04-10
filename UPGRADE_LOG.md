@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 11:00 - [Learning Mode] Dictation practice mode for subtitle lines
+Added a dedicated Dictation Practice page (`/video/<id>/dictation`) that reads each subtitle line aloud via the browser's Web Speech API, prompts the user to type what they heard, then highlights correct (green) vs incorrect/missing (red strikethrough) words with a per-line and running cumulative accuracy score. A "Dictation Practice" button on every video detail page links straight to it; keyboard shortcuts (Space to play, Enter to check/next, R to replay) keep hands off the mouse throughout the session.
+
 ## 2026-04-10 10:00 - [Gamification] Daily learning streak tracker on dashboard + stats
 Added a consecutive-day learning streak counter computed from existing LearningSession data (no schema change). Displayed as a 4th stat card on both the dashboard and the analytics page, with a flickering flame animation, color-coded borders (gray → red → yellow → orange), and motivational copy that escalates from "come back tomorrow" through "you're on fire!" to "Legendary streak!". The dashboard grid was also widened to 4 columns (responsive: 1→2→4) to accommodate the new card without crowding.
 

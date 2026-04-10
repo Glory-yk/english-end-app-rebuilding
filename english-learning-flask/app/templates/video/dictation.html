@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="text-gray-400 hover:text-gray-700 transition text-sm font-medium">← Back to Video</a>
+        <div>
+            <h1 class="text-2xl font-bold leading-tight">Dictation Practice</h1>
+            <p class="text-gray-500 text-sm truncate max-w-xs">{{ video.title }}</p>
+        </div>
+    </div>
+
+    {% if not subtitles %}
+    <div class="bg-white rounded-xl shadow p-12 text-center">
+        <div class="text-5xl mb-4">🎧</div>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">No subtitles available</h2>
+        <p class="text-gray-500 mb-6">This video has no subtitle lines to practise with.</p>
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition">
+            Go Back
+        </a>
+    </div>
+
+    {% else %}
+
+    <!-- Progress bar -->
+    <div class="flex items-center justify-between mb-2">
+        <span id="progress-label" class="text-sm font-bold text-gray-500">Line 1 of {{ subtitles|length }}</span>
+        <span id="score-label" class="text-sm font-bold text-green-600">Score: —</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+        <div id="progress-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+
+    <!-- Main card -->
+    <div id="dictation-card" class="bg-white rounded-xl shadow-2xl p-8 min-h-[340px] flex flex-col items-center justify-center text-center">
+
+        <!-- State: play (initial) -->
+        <div id="state-play">
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6">Press Play to hear the audio</p>
+            <button id="play-btn" onclick="playLine()"
+                    class="w-28 h-28 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full flex items-center justify-center shadow-xl transition-transform mx-auto"
+                    aria-label="Play audio">
+                <svg class="w-12 h-12 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <p class="text-gray-400 text-xs mt-4">Audio will play via your browser's text-to-speech</p>
+        </div>
+
+        <!-- State: typing -->
+        <div id="state-type" class="hidden w-full">
+            <button onclick="playLine()"
+                    class="inline-flex items-center gap-2 text-blue-500 hover:text-blue-700 text-sm font-bold mb-5 transition"
+                    aria-label="Replay audio">
+                <span class="text-lg">🔊</span> Replay Audio
+            </button>
+            <p class="text-gray-500 text-sm font-medium mb-3">Type what you heard:</p>
+            <textarea id="user-input" rows="3"
+                      class="w-full border-2 border-gray-300 focus:border-blue-500 rounded-xl p-4 text-lg focus:outline-none resize-none transition"
+                      placeholder="Type the sentence here…"
+                      aria-label="Your answer"></textarea>
+            <button onclick="checkAnswer()"
+                    class="mt-4 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-3 px-8 rounded-full transition-transform">
+                Check Answer
+            </button>
+        </div>
+
+        <!-- State: result -->
+        <div id="state-result" class="hidden w-full">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Result</p>
+            <div id="result-words" class="text-xl leading-loose flex flex-wrap justify-center gap-x-1 gap-y-1 mb-3"></div>
+            <p id="line-score" class="text-sm text-gray-500 mb-5"></p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="playLine()"
+                        class="inline-flex items-center gap-2 text-blue-500 hover:text-blue-700 text-sm font-bold transition"
+                        aria-label="Replay audio">
+                    🔊 Replay
+                </button>
+                <button onclick="nextLine()"
+                        class="bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold py-2 px-7 rounded-full transition-transform">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Completion screen (hidden) -->
+    <div id="completion-screen" class="hidden bg-white rounded-xl shadow-2xl p-12 text-center">
+        <div class="text-6xl mb-4">🎉</div>
+        <h2 class="text-2xl font-bold mb-2">Dictation Complete!</h2>
+        <p class="text-gray-500 mb-4">
+            You practised <strong>{{ subtitles|length }}</strong> line{{ 's' if subtitles|length != 1 }}.
+        </p>
+        <p class="text-4xl font-black text-blue-600 mb-2" id="final-score-pct"></p>
+        <p class="text-gray-400 text-sm mb-8" id="final-score-detail"></p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{{ url_for('video.dictation', video_id=video.id) }}"
+               class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition">
+                Try Again
+            </a>
+            <a href="{{ url_for('video.detail', video_id=video.id) }}"
+               class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                Back to Video
+            </a>
+        </div>
+    </div>
+
+    <!-- Keyboard hint bar -->
+    <div class="mt-5 flex justify-center flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400 select-none" aria-label="Keyboard shortcuts">
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Space</kbd> Play</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> Check / Next</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> Replay</span>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+    const LINES = {{ subs_texts | tojson }};
+    let currentIdx = 0;
+    let totalCorrect = 0;
+    let totalRefWords = 0;
+
+    // --- TTS ---
+    function speak(text, onDone) {
+        if (!('speechSynthesis' in window)) {
+            if (onDone) onDone();
+            return;
+        }
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.lang = 'en-US';
+        utt.rate = 0.8;
+        utt.pitch = 1;
+        if (onDone) utt.onend = onDone;
+        window.speechSynthesis.speak(utt);
+    }
+
+    function playLine() {
+        speak(LINES[currentIdx], () => showState('type'));
+    }
+
+    // --- State machine ---
+    function showState(state) {
+        ['state-play', 'state-type', 'state-result'].forEach(id =>
+            document.getElementById(id).classList.add('hidden')
+        );
+        document.getElementById('state-' + state).classList.remove('hidden');
+        if (state === 'type') {
+            setTimeout(() => document.getElementById('user-input').focus(), 80);
+        }
+    }
+
+    // --- Scoring ---
+    function normalize(word) {
+        return word.toLowerCase().replace(/[^a-z0-9']/g, '');
+    }
+
+    function checkAnswer() {
+        const userRaw = document.getElementById('user-input').value.trim();
+        const refRaw  = LINES[currentIdx];
+
+        const refTokens  = refRaw.split(/\s+/).filter(Boolean);
+        const userTokens = userRaw.split(/\s+/).filter(Boolean);
+
+        let lineCorrect = 0;
+        const annotated = refTokens.map((rt, i) => {
+            const rn = normalize(rt);
+            const un = normalize(userTokens[i] || '');
+            const ok = rn !== '' && rn === un;
+            if (ok) lineCorrect++;
+            return { word: rt, correct: ok };
+        });
+
+        totalCorrect  += lineCorrect;
+        totalRefWords += refTokens.length;
+
+        // Build highlighted result
+        const container = document.getElementById('result-words');
+        container.innerHTML = '';
+        annotated.forEach(({ word, correct }) => {
+            const span = document.createElement('span');
+            span.textContent = word;
+            span.className = correct
+                ? 'px-1 py-0.5 rounded bg-green-100 text-green-800 font-semibold'
+                : 'px-1 py-0.5 rounded bg-red-100 text-red-700 font-semibold line-through';
+            container.appendChild(span);
+        });
+
+        const linePct = refTokens.length > 0 ? Math.round(lineCorrect / refTokens.length * 100) : 100;
+        document.getElementById('line-score').textContent =
+            `${lineCorrect} / ${refTokens.length} words correct  (${linePct}%)`;
+
+        updateProgress();
+        showState('result');
+    }
+
+    function nextLine() {
+        currentIdx++;
+        if (currentIdx >= LINES.length) {
+            showCompletion();
+            return;
+        }
+        document.getElementById('user-input').value = '';
+        updateProgress();
+        showState('play');
+    }
+
+    // --- Progress bar + score label ---
+    function updateProgress() {
+        const total = LINES.length;
+        const done  = currentIdx;
+        const lineNum = Math.min(done + 1, total);
+        document.getElementById('progress-label').textContent = `Line ${lineNum} of ${total}`;
+        document.getElementById('progress-bar').style.width = `${Math.round(done / total * 100)}%`;
+
+        if (totalRefWords > 0) {
+            const pct = Math.round(totalCorrect / totalRefWords * 100);
+            document.getElementById('score-label').textContent = `Score: ${pct}%`;
+        }
+    }
+
+    // --- Completion ---
+    function showCompletion() {
+        document.getElementById('dictation-card').classList.add('hidden');
+        document.getElementById('completion-screen').classList.remove('hidden');
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-label').textContent = `Complete! ${LINES.length} lines`;
+
+        const finalPct = totalRefWords > 0 ? Math.round(totalCorrect / totalRefWords * 100) : 0;
+        document.getElementById('final-score-pct').textContent = `${finalPct}% accuracy`;
+        document.getElementById('final-score-detail').textContent =
+            `${totalCorrect} of ${totalRefWords} words correct`;
+        document.getElementById('score-label').textContent = `Score: ${finalPct}%`;
+    }
+
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', e => {
+        const inTextarea = document.activeElement.tagName === 'TEXTAREA';
+
+        // Enter inside textarea → check or next
+        if (inTextarea) {
+            if (e.code === 'Enter' && !e.shiftKey) {
+                const stateType   = document.getElementById('state-type');
+                const stateResult = document.getElementById('state-result');
+                if (!stateType.classList.contains('hidden')) {
+                    e.preventDefault();
+                    checkAnswer();
+                } else if (!stateResult.classList.contains('hidden')) {
+                    e.preventDefault();
+                    nextLine();
+                }
+            }
+            return; // Don't intercept other keys while typing
+        }
+
+        // Outside textarea
+        const statePlay   = document.getElementById('state-play');
+        const stateResult = document.getElementById('state-result');
+
+        if (e.code === 'Space') {
+            e.preventDefault();
+            if (!statePlay.classList.contains('hidden')) playLine();
+        } else if (e.code === 'Enter') {
+            e.preventDefault();
+            if (!stateResult.classList.contains('hidden')) nextLine();
+        } else if (e.code === 'KeyR') {
+            e.preventDefault();
+            playLine();
+        }
+    });
+</script>
+{% endblock %}
