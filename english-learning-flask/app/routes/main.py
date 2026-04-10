@@ -41,6 +41,12 @@ def index():
         ).scalar()
         avg_quiz_pct = round(avg_quiz_raw * 100) if avg_quiz_raw is not None else None
 
+        # Words due for review right now
+        due_count = UserVocabulary.query.filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.next_review <= datetime.utcnow()
+        ).count()
+
         # Word of the Day: deterministic pick based on date + profile id
         today_str = datetime.utcnow().date().isoformat()
         all_words = UserVocabulary.query.filter_by(profile_id=profile.id).all()
@@ -57,6 +63,7 @@ def index():
                                goal_pct=goal_pct,
                                mastered_count=mastered_count,
                                avg_quiz_pct=avg_quiz_pct,
+                               due_count=due_count,
                                word_of_day=word_of_day)
     return render_template('main/landing.html')
 
@@ -71,14 +78,14 @@ def stats():
     total_watched_sec = db.session.query(func.sum(LearningSession.watched_sec)).filter_by(profile_id=profile.id).scalar() or 0
     total_videos = LearningSession.query.filter_by(profile_id=profile.id).distinct(LearningSession.video_id).count()
     total_vocab = UserVocabulary.query.filter_by(profile_id=profile.id).count()
-    
+
     # 2. Vocabulary Status Distribution
     vocab_stats = db.session.query(
-        UserVocabulary.status, 
+        UserVocabulary.status,
         func.count(UserVocabulary.id)
     ).filter_by(profile_id=profile.id).group_by(UserVocabulary.status).all()
     vocab_dist = {status: count for status, count in vocab_stats}
-    
+
     # 3. Learning Activity (Last 7 days)
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     daily_stats = db.session.query(
@@ -89,7 +96,7 @@ def stats():
         LearningSession.profile_id == profile.id,
         LearningSession.created_at >= seven_days_ago
     ).group_by(func.date(LearningSession.created_at)).order_by('date').all()
-    
+
     # Prepare data for charts
     labels = [(datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
     activity_data = {row.date.strftime('%Y-%m-%d'): row.seconds for row in daily_stats}
@@ -104,7 +111,7 @@ def stats():
     ).group_by(Video.difficulty).all()
     diff_dist = {diff or 'unknown': count for diff, count in diff_stats}
 
-    return render_template('main/stats.html', 
+    return render_template('main/stats.html',
                          profile=profile,
                          total_hours=round(total_watched_sec / 3600, 1),
                          total_videos=total_videos,
