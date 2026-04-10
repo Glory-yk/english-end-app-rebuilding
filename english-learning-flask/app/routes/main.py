@@ -1,13 +1,44 @@
 import hashlib
+from datetime import datetime, timedelta, date as date_type
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from sqlalchemy import func, case
-from datetime import datetime, timedelta
 from app.models.profile import Profile
 from app.models.progress import LearningSession, Quiz
 from app.models.vocabulary import UserVocabulary
 from app.models.video import Video, Channel
 from app import db
+
+
+def _calculate_streak(profile_id):
+    """Return the current consecutive-day learning streak for a profile.
+
+    Counts backward from today; a day counts if at least one LearningSession
+    exists for it.  Works with both SQLite (date strings) and PostgreSQL
+    (Python date objects).
+    """
+    rows = (
+        db.session.query(func.date(LearningSession.created_at))
+        .filter_by(profile_id=profile_id)
+        .distinct()
+        .all()
+    )
+    active_dates = set()
+    for (d,) in rows:
+        if isinstance(d, str):
+            try:
+                active_dates.add(datetime.strptime(d, '%Y-%m-%d').date())
+            except ValueError:
+                pass
+        elif isinstance(d, date_type):
+            active_dates.add(d)
+
+    streak = 0
+    check = datetime.utcnow().date()
+    while check in active_dates:
+        streak += 1
+        check -= timedelta(days=1)
+    return streak
 
 main_bp = Blueprint('main', __name__)
 
@@ -55,6 +86,9 @@ def index():
             seed = int(hashlib.md5(f"{today_str}-{profile.id}".encode()).hexdigest(), 16)
             word_of_day = all_words[seed % len(all_words)]
 
+        # Consecutive-day learning streak
+        streak_days = _calculate_streak(profile.id)
+
         return render_template('main/dashboard.html',
                                profile=profile,
                                sessions=recent_sessions,
@@ -64,7 +98,8 @@ def index():
                                mastered_count=mastered_count,
                                avg_quiz_pct=avg_quiz_pct,
                                due_count=due_count,
-                               word_of_day=word_of_day)
+                               word_of_day=word_of_day,
+                               streak_days=streak_days)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
@@ -111,6 +146,8 @@ def stats():
     ).group_by(Video.difficulty).all()
     diff_dist = {diff or 'unknown': count for diff, count in diff_stats}
 
+    streak_days = _calculate_streak(profile.id)
+
     return render_template('main/stats.html',
                          profile=profile,
                          total_hours=round(total_watched_sec / 3600, 1),
@@ -119,4 +156,5 @@ def stats():
                          vocab_dist=vocab_dist,
                          labels=labels,
                          chart_values=chart_values,
-                         diff_dist=diff_dist)
+                         diff_dist=diff_dist,
+                         streak_days=streak_days)

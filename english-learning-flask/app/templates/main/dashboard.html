@@ -26,7 +26,7 @@
     </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <!-- Today's Learning Time -->
         <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
             <h3 class="text-gray-500 font-bold uppercase text-sm">Daily Goal</h3>
@@ -72,7 +72,40 @@
             <p class="text-sm text-gray-500 mt-2">No quizzes taken yet.</p>
             {% endif %}
         </div>
+
+        <!-- Learning Streak -->
+        <div class="bg-white rounded-xl shadow p-6 border-l-4 {% if streak_days >= 7 %}border-orange-500{% elif streak_days >= 3 %}border-yellow-500{% elif streak_days >= 1 %}border-red-400{% else %}border-gray-300{% endif %} relative overflow-hidden">
+            <h3 class="text-gray-500 font-bold uppercase text-sm">Learning Streak</h3>
+            <div class="flex items-end gap-2 mt-2">
+                <p class="text-3xl font-black {% if streak_days >= 1 %}text-orange-500{% else %}text-gray-400{% endif %}">
+                    {{ streak_days }}
+                </p>
+                <span class="text-lg text-gray-400 font-normal mb-0.5">day{{ 's' if streak_days != 1 }}</span>
+                {% if streak_days >= 1 %}
+                <span class="text-2xl mb-0.5 streak-flame" aria-hidden="true">🔥</span>
+                {% endif %}
+            </div>
+            {% if streak_days == 0 %}
+            <p class="text-xs text-gray-400 mt-2">Watch a video today to start your streak!</p>
+            {% elif streak_days == 1 %}
+            <p class="text-xs text-orange-400 font-semibold mt-2">Great start — come back tomorrow!</p>
+            {% elif streak_days < 7 %}
+            <p class="text-xs text-yellow-600 font-semibold mt-2">Keep going — {{ 7 - streak_days }} day{{ 's' if (7 - streak_days) != 1 }} to a week streak!</p>
+            {% elif streak_days < 30 %}
+            <p class="text-xs text-orange-600 font-bold mt-2">{{ streak_days }}-day streak — you're on fire!</p>
+            {% else %}
+            <p class="text-xs text-red-600 font-bold mt-2">Legendary {{ streak_days }}-day streak! 🏆</p>
+            {% endif %}
+        </div>
     </div>
+
+<style>
+    @keyframes flicker {
+        0%, 100% { transform: scale(1) rotate(-2deg); }
+        50%       { transform: scale(1.15) rotate(2deg); }
+    }
+    .streak-flame { display: inline-block; animation: flicker 0.9s ease-in-out infinite; }
+</style>
 
     <!-- Word of the Day -->
     {% if word_of_day %}

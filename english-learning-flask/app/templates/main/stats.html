@@ -8,7 +8,7 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
             <div class="flex items-center justify-between mb-2">
                 <span class="text-gray-500 font-bold uppercase text-xs">Total Learning Time</span>
@@ -30,7 +30,23 @@
             </div>
             <div class="text-3xl font-black">{{ total_vocab }} <span class="text-sm font-normal text-gray-500">words</span></div>
         </div>
+        <div class="bg-white p-6 rounded-2xl shadow-lg border {% if streak_days >= 1 %}border-orange-200{% else %}border-gray-100{% endif %}">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-500 font-bold uppercase text-xs">Current Streak</span>
+                <span class="text-2xl {% if streak_days >= 1 %}streak-flame{% endif %}">🔥</span>
+            </div>
+            <div class="text-3xl font-black {% if streak_days >= 1 %}text-orange-500{% else %}text-gray-400{% endif %}">
+                {{ streak_days }} <span class="text-sm font-normal text-gray-500">day{{ 's' if streak_days != 1 }}</span>
+            </div>
+        </div>
     </div>
+<style>
+    @keyframes flicker {
+        0%, 100% { transform: scale(1) rotate(-2deg); }
+        50%       { transform: scale(1.15) rotate(2deg); }
+    }
+    .streak-flame { display: inline-block; animation: flicker 0.9s ease-in-out infinite; }
+</style>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Learning Activity Chart -->

@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 10:00 - [Gamification] Daily learning streak tracker on dashboard + stats
+Added a consecutive-day learning streak counter computed from existing LearningSession data (no schema change). Displayed as a 4th stat card on both the dashboard and the analytics page, with a flickering flame animation, color-coded borders (gray → red → yellow → orange), and motivational copy that escalates from "come back tomorrow" through "you're on fire!" to "Legendary streak!". The dashboard grid was also widened to 4 columns (responsive: 1→2→4) to accommodate the new card without crowding.
+
 ## 2026-04-10 09:00 - [Accessibility/UX] Keyboard shortcuts for vocabulary flashcard review
 Added keyboard shortcuts to the SRS review page so users never need to reach for the mouse: Space (or →) reveals the answer, keys 1–6 submit quality ratings 0–5, and R replays the word's pronunciation. A discoverable hint bar below the card deck labels all three shortcuts using styled `<kbd>` elements. Input-focused elements are guarded so shortcuts don't fire while the user types in the auto-pronounce toggle checkbox area.
 
