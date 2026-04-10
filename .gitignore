@@ -11,6 +11,7 @@ env/
 .env/
 **/venv/
 **/env/
+**/venv_pkgs/
 
 # Build
 dist/
