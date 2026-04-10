@@ -60,11 +60,42 @@
 
             <h1 class="text-2xl font-bold mb-1">{{ video.title }}</h1>
             <p class="text-gray-600 mb-3">{{ video.channel_name }}</p>
-            <a href="{{ url_for('video.dictation', video_id=video.id) }}"
-               class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition mb-4"
-               title="Listen to subtitle lines and type what you hear">
-                🎧 Dictation Practice
-            </a>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <a href="{{ url_for('video.dictation', video_id=video.id) }}"
+                   class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition"
+                   title="Listen to subtitle lines and type what you hear">
+                    🎧 Dictation Practice
+                </a>
+                <button onclick="togglePomodoroPanel()"
+                        id="pom-toggle-btn"
+                        class="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-sm font-bold py-2 px-4 rounded-lg transition"
+                        title="Start a focused Pomodoro study session">
+                    🍅 Pomodoro Timer
+                </button>
+            </div>
+
+            <!-- Pomodoro Timer Panel -->
+            <div id="pomodoro-panel" class="hidden bg-white border border-red-200 rounded-xl shadow-md p-4 mb-4 max-w-xs">
+                <div class="flex items-center justify-between mb-2">
+                    <span id="pom-phase" class="text-sm font-bold text-red-600">Focus Time</span>
+                    <span id="pom-count" class="text-xs font-semibold text-gray-400">🍅 × 0</span>
+                </div>
+                <div id="pom-time" class="text-5xl font-black text-center text-gray-800 my-3 tabular-nums tracking-tighter">25:00</div>
+                <div class="w-full bg-gray-100 rounded-full h-2 mb-4 overflow-hidden">
+                    <div id="pom-progress" class="bg-red-500 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <div class="flex gap-2 justify-center">
+                    <button onclick="togglePomodoroRun()" id="pom-start-btn"
+                            class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition text-sm">
+                        Start
+                    </button>
+                    <button onclick="resetPomodoro()"
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-lg transition text-sm">
+                        Reset
+                    </button>
+                </div>
+                <p id="pom-hint" class="text-center text-xs text-gray-400 mt-3">25 min focus → 5 min break</p>
+            </div>
         </div>
 
         <!-- Subtitles Sidebar -->
@@ -282,6 +313,131 @@
                 item.classList.remove('bg-blue-100', 'border-blue-300', 'active-sub');
             }
         });
+    }
+
+    // ── Pomodoro Timer ────────────────────────────────────────────────────────
+    const POM_WORK      = 25 * 60;
+    const POM_BREAK     = 5  * 60;
+    const POM_LONGBREAK = 15 * 60;
+
+    const pom = {
+        running:  false,
+        phase:    'work',   // 'work' | 'break' | 'longBreak'
+        timeLeft: POM_WORK,
+        count:    0,
+        timer:    null,
+    };
+
+    const originalTitle = document.title;
+
+    function togglePomodoroPanel() {
+        const panel = document.getElementById('pomodoro-panel');
+        const btn   = document.getElementById('pom-toggle-btn');
+        const isHidden = panel.classList.toggle('hidden');
+        btn.classList.toggle('bg-red-100', !isHidden);
+        btn.classList.toggle('border-red-400', !isHidden);
+        if (!isHidden) renderPom();
+    }
+
+    function playPomBeep(freq, dur) {
+        try {
+            const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + dur);
+        } catch(e) {}
+    }
+
+    function renderPom() {
+        const mins = String(Math.floor(pom.timeLeft / 60)).padStart(2, '0');
+        const secs = String(pom.timeLeft % 60).padStart(2, '0');
+        document.getElementById('pom-time').textContent = `${mins}:${secs}`;
+
+        const total = pom.phase === 'work' ? POM_WORK :
+                      pom.phase === 'break' ? POM_BREAK : POM_LONGBREAK;
+        const pct   = ((total - pom.timeLeft) / total) * 100;
+        const bar   = document.getElementById('pom-progress');
+        bar.style.width = pct + '%';
+
+        const phaseEl = document.getElementById('pom-phase');
+        const hints   = { work: '25 min focus → 5 min break', break: 'Short break — stretch & rest!', longBreak: 'Long break — well deserved! ☕' };
+        if (pom.phase === 'work') {
+            phaseEl.textContent  = 'Focus Time';
+            phaseEl.className    = 'text-sm font-bold text-red-600';
+            bar.className        = 'bg-red-500 h-2 rounded-full transition-all duration-1000';
+        } else if (pom.phase === 'break') {
+            phaseEl.textContent  = 'Short Break';
+            phaseEl.className    = 'text-sm font-bold text-green-600';
+            bar.className        = 'bg-green-500 h-2 rounded-full transition-all duration-1000';
+        } else {
+            phaseEl.textContent  = 'Long Break';
+            phaseEl.className    = 'text-sm font-bold text-blue-600';
+            bar.className        = 'bg-blue-500 h-2 rounded-full transition-all duration-1000';
+        }
+        document.getElementById('pom-count').textContent = '🍅 × ' + pom.count;
+        document.getElementById('pom-hint').textContent  = hints[pom.phase];
+        document.getElementById('pom-start-btn').textContent = pom.running ? 'Pause' : 'Start';
+
+        if (pom.running) {
+            document.title = `[${mins}:${secs}] ${pom.phase === 'work' ? '🍅' : '☕'} Studying…`;
+        } else {
+            document.title = originalTitle;
+        }
+    }
+
+    function advancePomPhase() {
+        if (pom.phase === 'work') {
+            pom.count++;
+            const isLong = pom.count % 4 === 0;
+            pom.phase    = isLong ? 'longBreak' : 'break';
+            pom.timeLeft = isLong ? POM_LONGBREAK : POM_BREAK;
+            playPomBeep(523, 0.5); // high ping — work done
+        } else {
+            pom.phase    = 'work';
+            pom.timeLeft = POM_WORK;
+            playPomBeep(392, 0.4); // lower ping — break done
+        }
+        renderPom();
+        // Auto-start the next phase
+        pom.running = false;
+        togglePomodoroRun();
+    }
+
+    function togglePomodoroRun() {
+        if (pom.running) {
+            clearInterval(pom.timer);
+            pom.running = false;
+        } else {
+            pom.running = true;
+            pom.timer   = setInterval(() => {
+                pom.timeLeft--;
+                if (pom.timeLeft < 0) {
+                    clearInterval(pom.timer);
+                    pom.running = false;
+                    advancePomPhase();
+                    return;
+                }
+                renderPom();
+            }, 1000);
+        }
+        renderPom();
+    }
+
+    function resetPomodoro() {
+        clearInterval(pom.timer);
+        pom.running  = false;
+        pom.phase    = 'work';
+        pom.timeLeft = POM_WORK;
+        pom.count    = 0;
+        document.title = originalTitle;
+        renderPom();
     }
 </script>
 {% endblock %}

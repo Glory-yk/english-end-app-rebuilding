@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 12:00 - [New Feature] Pomodoro study timer on video detail page
+Added a collapsible Pomodoro timer widget to the video detail page (🍅 button next to Dictation Practice). Clicking the button expands a compact panel showing a colour-coded countdown (red for 25-min Focus, green for 5-min Short Break, blue for 15-min Long Break after every 4 pomodoros), an animated progress bar, a session counter, and Start/Pause/Reset controls. Phase transitions play a Web Audio API beep and auto-start the next phase; the browser tab title mirrors the current countdown so users can glance at it without switching windows. Zero backend changes required.
+
 ## 2026-04-10 11:00 - [Learning Mode] Dictation practice mode for subtitle lines
 Added a dedicated Dictation Practice page (`/video/<id>/dictation`) that reads each subtitle line aloud via the browser's Web Speech API, prompts the user to type what they heard, then highlights correct (green) vs incorrect/missing (red strikethrough) words with a per-line and running cumulative accuracy score. A "Dictation Practice" button on every video detail page links straight to it; keyboard shortcuts (Space to play, Enter to check/next, R to replay) keep hands off the mouse throughout the session.
 
