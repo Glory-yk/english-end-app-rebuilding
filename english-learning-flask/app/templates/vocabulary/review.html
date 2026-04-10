@@ -4,49 +4,105 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Vocabulary Review</h1>
-        <p class="text-gray-600 font-bold">Words Due: {{ count }}</p>
+        <div class="flex items-center gap-4">
+            <p class="text-gray-600 font-bold">Words Due: {{ count }}</p>
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                <input type="checkbox" id="auto-speak-toggle" checked
+                       class="w-4 h-4 accent-blue-600"
+                       onchange="autoSpeak = this.checked">
+                Auto-pronounce
+            </label>
+        </div>
     </div>
 
     <div class="max-w-2xl mx-auto">
+        <!-- Completion Screen (hidden until all cards reviewed) -->
+        <div id="review-completion" class="hidden bg-white rounded-xl shadow-2xl p-12 text-center">
+            <div class="text-6xl mb-4">&#127881;</div>
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Session Complete!</h2>
+            <p class="text-gray-600 mb-8">
+                You reviewed all <strong>{{ count }}</strong> word{{ 's' if count != 1 else '' }}.
+                Keep it up — consistency is the key to mastery.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700">
+                    Review Again
+                </a>
+                <a href="{{ url_for('vocab.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200">
+                    Back to Wordbook
+                </a>
+            </div>
+        </div>
+
         {% for word in words %}
-        <div id="card-{{ word.id }}" class="card-item {% if not loop.first %}hidden{% endif %}">
-            <div class="bg-white rounded-xl shadow-2xl p-8 min-h-[400px] flex flex-col justify-center items-center text-center">
-                <div class="mb-8">
-                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Original Word</p>
+        <div id="card-{{ word.id }}"
+             data-word="{{ word.vocabulary.word }}"
+             class="card-item {% if not loop.first %}hidden{% endif %}">
+            <div class="bg-white rounded-xl shadow-2xl p-8 min-h-[420px] flex flex-col justify-center items-center text-center">
+                <div class="mb-8 w-full">
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Word</p>
                     <h2 class="text-5xl font-black text-blue-600">{{ word.vocabulary.word }}</h2>
-                    <p class="text-gray-500 mt-2 italic">Pronunciation Loading...</p>
+
+                    <!-- Phonetic + speaker button -->
+                    <div class="flex items-center justify-center gap-2 mt-3">
+                        {% if word.vocabulary.phonetic %}
+                        <p class="text-gray-500 italic text-lg">{{ word.vocabulary.phonetic }}</p>
+                        {% endif %}
+                        <button onclick="speakWord('{{ word.vocabulary.word }}')"
+                                title="Pronounce"
+                                class="text-blue-400 hover:text-blue-600 transition text-2xl leading-none"
+                                aria-label="Pronounce {{ word.vocabulary.word }}">
+                            &#128266;
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Answer Section (Hidden by default) -->
-                <div id="answer-{{ word.id }}" class="hidden w-full border-t pt-8 mt-8">
+                <div id="answer-{{ word.id }}" class="hidden w-full border-t pt-8 mt-4">
+                    {% if word.vocabulary.pos %}
+                    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full mb-3 uppercase tracking-wide">{{ word.vocabulary.pos }}</span>
+                    {% endif %}
                     <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Korean Meaning</p>
-                    <h3 class="text-3xl font-bold text-gray-800 mb-6">{{ word.vocabulary.meaning_ko }}</h3>
-                    
+                    <h3 class="text-3xl font-bold text-gray-800 mb-4">{{ word.vocabulary.meaning_ko }}</h3>
+
+                    {% if word.vocabulary.example_en %}
+                    <p class="text-sm text-gray-500 italic mb-6">"{{ word.vocabulary.example_en }}"</p>
+                    {% endif %}
+
+                    <p class="text-xs text-gray-400 mb-3 font-medium">How well did you remember it?</p>
                     <div class="grid grid-cols-6 gap-2">
+                        {% set labels = ['Blank', 'Wrong', 'Hard', 'OK', 'Good', 'Easy'] %}
                         {% for q in range(6) %}
-                        <button hx-post="{{ url_for('vocab.submit_answer', word_id=word.id) }}" 
+                        <button hx-post="{{ url_for('vocab.submit_answer', word_id=word.id) }}"
                                 hx-vals='{"quality": {{ q }}}'
                                 hx-target="#card-{{ word.id }}"
                                 hx-swap="outerHTML"
-                                onclick="showNextCard()"
-                                class="py-3 px-1 rounded-lg text-white font-bold transition-transform active:scale-95
-                                {% if q == 0 %}bg-red-600{% elif q == 1 %}bg-red-400{% elif q == 2 %}bg-orange-400{% elif q == 3 %}bg-yellow-400{% elif q == 4 %}bg-green-400{% else %}bg-green-600{% endif %}">
-                            {{ q }}
+                                onclick="advanceCard()"
+                                class="py-3 px-1 rounded-lg text-white text-xs font-bold transition-transform active:scale-95
+                                {% if q == 0 %}bg-red-600 hover:bg-red-700
+                                {% elif q == 1 %}bg-red-400 hover:bg-red-500
+                                {% elif q == 2 %}bg-orange-400 hover:bg-orange-500
+                                {% elif q == 3 %}bg-yellow-400 hover:bg-yellow-500 text-yellow-900
+                                {% elif q == 4 %}bg-green-400 hover:bg-green-500
+                                {% else %}bg-green-600 hover:bg-green-700{% endif %}">
+                            {{ labels[q] }}
                         </button>
                         {% endfor %}
                     </div>
                 </div>
 
-                <button id="show-btn-{{ word.id }}" 
-                        onclick="document.getElementById('answer-{{ word.id }}').classList.remove('hidden'); this.classList.add('hidden')"
-                        class="mt-8 bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700">
+                <button id="show-btn-{{ word.id }}"
+                        onclick="revealAnswer('{{ word.id }}')"
+                        class="mt-8 bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition">
                     Show Meaning
                 </button>
             </div>
         </div>
         {% else %}
         <div class="bg-white rounded-xl shadow p-12 text-center">
-            <h2 class="text-2xl font-bold text-green-600 mb-4">You're All Caught Up! 🎉</h2>
+            <h2 class="text-2xl font-bold text-green-600 mb-4">You're All Caught Up! &#127881;</h2>
             <p class="text-gray-600 mb-8">No words due for review right now. Go watch some videos to learn more!</p>
             <a href="{{ url_for('video.index') }}" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full">Explore Videos</a>
         </div>
@@ -55,16 +111,56 @@
 </div>
 
 <script>
-    function showNextCard() {
-        const currentCards = document.querySelectorAll('.card-item:not(.hidden)');
-        if (currentCards.length > 0) {
-            const nextCard = currentCards[0].nextElementSibling;
-            if (nextCard && nextCard.classList.contains('card-item')) {
-                setTimeout(() => {
-                    nextCard.classList.remove('hidden');
-                }, 100);
-            }
-        }
+    let autoSpeak = true;
+
+    // --- Web Speech API ---
+    function speakWord(word) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
     }
+
+    // --- Reveal answer ---
+    function revealAnswer(cardId) {
+        document.getElementById('answer-' + cardId).classList.remove('hidden');
+        document.getElementById('show-btn-' + cardId).classList.add('hidden');
+    }
+
+    // --- Advance to next card after a quality rating ---
+    function advanceCard() {
+        // Find currently visible card
+        const currentCard = document.querySelector('.card-item:not(.hidden)');
+        if (!currentCard) return;
+
+        const nextCard = currentCard.nextElementSibling;
+
+        // Hide current card slightly after HTMX finishes replacing it
+        setTimeout(() => {
+            // Show next card if it exists
+            if (nextCard && nextCard.classList.contains('card-item')) {
+                nextCard.classList.remove('hidden');
+                const nextWord = nextCard.dataset.word;
+                if (autoSpeak && nextWord) {
+                    setTimeout(() => speakWord(nextWord), 250);
+                }
+            } else {
+                // All cards done — show completion screen
+                document.getElementById('review-completion').classList.remove('hidden');
+            }
+        }, 200);
+    }
+
+    // Auto-speak first word on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstCard = document.querySelector('.card-item:not(.hidden)');
+        if (firstCard && autoSpeak) {
+            const word = firstCard.dataset.word;
+            if (word) setTimeout(() => speakWord(word), 400);
+        }
+    });
 </script>
 {% endblock %}
