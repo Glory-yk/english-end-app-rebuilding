@@ -1,6 +1,6 @@
+import logging
 import requests
 import re
-import traceback
 import os
 import json
 import xml.etree.ElementTree as ET
@@ -8,13 +8,9 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from app.models.video import Video, Subtitle, Channel
 from app import db
 
-class YouTubeService:
-    @staticmethod
-    def log_debug(message):
-        """Log debug messages to a file."""
-        with open('debug_log.txt', 'a', encoding='utf-8') as f:
-            f.write(f"{message}\n")
+logger = logging.getLogger(__name__)
 
+class YouTubeService:
     @staticmethod
     def get_video_id(url):
         if not url: return None
@@ -24,22 +20,22 @@ class YouTubeService:
 
     @staticmethod
     def fetch_metadata(video_id):
-        YouTubeService.log_debug(f"--- Fetching Metadata for {video_id} ---")
+        logger.debug("Fetching metadata for video %s", video_id)
         oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
         try:
             response = requests.get(oembed_url, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                YouTubeService.log_debug("oEmbed Success")
+                logger.debug("oEmbed success for %s", video_id)
                 return {
                     'title': data.get('title', f"Video {video_id}"),
                     'channel_name': data.get('author_name', "Unknown Channel"),
                     'thumbnail_url': data.get('thumbnail_url', f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"),
                 }
             else:
-                YouTubeService.log_debug(f"oEmbed returned status: {response.status_code}")
+                logger.warning("oEmbed returned status %s for video %s", response.status_code, video_id)
         except Exception as e:
-            YouTubeService.log_debug(f"oEmbed Error: {str(e)}")
+            logger.error("oEmbed error for video %s: %s", video_id, e)
             
         return {
             'title': f"YouTube Video ({video_id})",
@@ -49,28 +45,28 @@ class YouTubeService:
 
     @staticmethod
     def fetch_transcript(video_id):
-        YouTubeService.log_debug(f"--- Fetching Transcript for {video_id} ---")
+        logger.debug("Fetching transcript for video %s", video_id)
         try:
             # Attempt 1
             return YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US'])
         except Exception as e:
-            YouTubeService.log_debug(f"Attempt 1 Fail: {str(e)}")
+            logger.debug("Transcript attempt 1 failed for %s: %s", video_id, e)
             try:
                 # Attempt 2
                 transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
                 transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-                YouTubeService.log_debug("Attempt 2 Success")
+                logger.debug("Transcript attempt 2 succeeded for %s", video_id)
                 return transcript.fetch()
             except Exception as e2:
-                YouTubeService.log_debug(f"Attempt 2 Fail: {str(e2)}")
+                logger.debug("Transcript attempt 2 failed for %s: %s", video_id, e2)
                 try:
                     # Attempt 3: Translation
                     transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
                     first = next(iter(transcript_list))
-                    YouTubeService.log_debug(f"Attempting translation from {first.language_code}")
+                    logger.debug("Translating transcript from %s for video %s", first.language_code, video_id)
                     return first.translate('en').fetch()
                 except Exception as e3:
-                    YouTubeService.log_debug(f"Attempt 3 Fail: {str(e3)}")
+                    logger.warning("All transcript attempts failed for %s: %s", video_id, e3)
         return None
 
     @staticmethod
@@ -78,7 +74,7 @@ class YouTubeService:
         """Fetch latest videos from a channel via RSS feed with a scraping fallback and sorting."""
         # RSS doesn't support sorting well, so for popularity we might jump straight to scraping
         rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-        YouTubeService.log_debug(f"Fetching RSS: {rss_url} (sort: {sort_by})")
+        logger.debug("Fetching channel videos for %s (sort: %s)", channel_id, sort_by)
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -105,7 +101,7 @@ class YouTubeService:
                             })
                     if videos: return videos
             except Exception as e:
-                YouTubeService.log_debug(f"RSS Feed error: {str(e)}")
+                logger.warning("RSS feed error for channel %s: %s", channel_id, e)
 
         # Fallback to scraping for sorting or RSS failure
         if sort_by == 'popular':
@@ -149,7 +145,7 @@ class YouTubeService:
                     })
                 return videos
             except Exception as e:
-                YouTubeService.log_debug(f"Scrape parse error: {str(e)}")
+                logger.warning("Scrape parse error for channel %s: %s", channel_id, e)
                 return []
         except Exception as e:
             return []
@@ -158,7 +154,7 @@ class YouTubeService:
     @classmethod
     def process_video(cls, video_url):
         video_id = cls.get_video_id(video_url)
-        YouTubeService.log_debug(f"\n\n=== Processing Video: {video_url} (ID: {video_id}) ===")
+        logger.info("Processing video: %s (id: %s)", video_url, video_id)
         
         if not video_id:
             return None, "Invalid URL"
@@ -207,16 +203,16 @@ class YouTubeService:
                 db.session.add(sub)
 
             db.session.commit()
-            YouTubeService.log_debug("Database Save Success")
+            logger.info("Video %s saved to database successfully", video_id)
             return new_video, "Success"
         except Exception as e:
             db.session.rollback()
             # If it's a unique constraint error, someone else might have just added it
             if "UNIQUE constraint failed" in str(e) or "duplicate key" in str(e).lower():
-                YouTubeService.log_debug(f"Handled concurrent insert for {video_id}")
+                logger.debug("Concurrent insert handled for video %s", video_id)
                 return Video.query.filter_by(youtube_id=video_id).first(), "Video already exists"
-            
-            YouTubeService.log_debug(f"DB Error: {str(e)}")
+
+            logger.error("Database error while saving video %s: %s", video_id, e)
             return None, f"Database Error: {str(e)}"
 
 

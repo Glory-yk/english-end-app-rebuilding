@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 06:00 - [Code Quality] Replace file-based debug logging with Python logging module
+Removed the custom `YouTubeService.log_debug()` method that appended raw text to `debug_log.txt` on every API call, replacing all 10 call sites with proper `logger.debug/info/warning/error()` calls using a module-level `logging.getLogger(__name__)`. Configured `basicConfig` in the app factory so log output is formatted and routed correctly. Also fixed a critical `NameError` bug in `video.py` where `jsonify` was used in the `record-session` endpoint but missing from the Flask imports.
+
 ## 2026-04-10 05:30 - [Feature/Vocabulary] Pronunciation guide in vocabulary review
 Replaced the "Pronunciation Loading..." placeholder in the SRS review flashcards with real browser-based pronunciation via the Web Speech API (no new dependencies). Each card now auto-pronounces the word when it appears, shows the phonetic transcription and POS badge when available, and has a speaker button for manual replay. Added an "Auto-pronounce" toggle so users can turn it off. Also fixed the card-advance logic to correctly show a styled completion screen (with "Review Again" and "Back to Wordbook" CTAs) when all due words have been rated, and improved quality buttons with descriptive labels (Blank/Wrong/Hard/OK/Good/Easy).
 
