@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 14:00 - [Learning Mode] Listening comprehension mode for videos
+Added a dedicated Listening Mode page (`/video/<id>/listen`) where subtitles are hidden by default so users practise understanding the spoken audio without text support. Users can toggle the full transcript on/off at any time via a "Reveal Subtitles" button (or the `S` keyboard shortcut), and the visible transcript syncs a highlighted active line to the playback position. After watching, a "Rate Understanding" panel lets users self-assess comprehension on a 1–5 emoji scale (Almost nothing → Fully understood), saving the session to their stats. Watch time is recorded every 30 s just like the main player. A teal "👂 Listening Mode" button was added first in the button row on every video detail page.
+
 ## 2026-04-10 13:00 - [Learning Mode] Sentence shadowing practice for subtitle lines
 Added a dedicated Shadowing Practice page (`/video/<id>/shadowing`) where users listen to each subtitle line via the browser's Web Speech API and then speak it aloud to shadow the speaker's rhythm and intonation. The page shows one line at a time: a large Play button triggers TTS, the user shadows during a prompted "Speak it aloud now…" phase, then clicks Reveal to see the text and self-assesses with "Got it ✓" or "↺ Try Again". A running accuracy score (lines nailed / lines revealed), progress bar, and completion screen are included. Keyboard shortcuts (Space=play/next, R=reveal, G=got it, T=try again) keep the session hands-free. A "Shadowing Practice" button was added alongside the existing Dictation Practice button on every video detail page.
 

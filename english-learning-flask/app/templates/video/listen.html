@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="text-gray-400 hover:text-gray-600 transition text-2xl leading-none" title="Back to video">&#8592;</a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Listening Comprehension</h1>
+            <p class="text-sm text-gray-500 mt-0.5">{{ video.title }}</p>
+        </div>
+    </div>
+
+    <!-- Instructions banner -->
+    <div id="instructions-bar" class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-5 flex items-start gap-3 text-sm text-blue-800">
+        <span class="text-xl shrink-0">👂</span>
+        <div>
+            <strong>How it works:</strong> Watch the video and listen carefully — subtitles are hidden.
+            When you're done (or anytime you want to check), click <strong>Reveal Subtitles</strong>.
+            Then rate how much you understood to track your progress.
+        </div>
+        <button onclick="document.getElementById('instructions-bar').remove()"
+                class="ml-auto shrink-0 text-blue-400 hover:text-blue-600 text-lg leading-none"
+                aria-label="Dismiss">&times;</button>
+    </div>
+
+    <!-- Video player -->
+    <div class="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl mb-6 relative">
+        <div id="player"></div>
+
+        <!-- Error overlay -->
+        <div id="player-error" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-6 text-center z-10">
+            <div class="bg-gray-800 p-8 rounded-3xl shadow-2xl border-2 border-red-500 max-w-sm">
+                <h3 id="error-title" class="text-2xl font-bold mb-2 text-red-400">Video Unavailable</h3>
+                <p id="error-message" class="text-gray-400 mb-6">This video cannot be played here.</p>
+                <a href="https://www.youtube.com/watch?v={{ video.youtube_id }}"
+                   target="_blank"
+                   class="bg-blue-600 px-6 py-3 rounded-full font-bold hover:bg-blue-700 transition shadow-lg block text-center">
+                    Watch on YouTube ↗️
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control bar -->
+    <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div class="flex items-center gap-2 text-sm text-gray-500">
+            <span id="sub-status-icon" class="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block"></span>
+            <span id="sub-status-text">Subtitles hidden</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="toggleSubtitles()"
+                    id="reveal-btn"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2 px-5 rounded-lg transition flex items-center gap-2">
+                <span id="reveal-btn-icon">👁</span>
+                <span id="reveal-btn-label">Reveal Subtitles</span>
+            </button>
+            <button onclick="showComprehensionCheck()"
+                    class="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-5 rounded-lg transition">
+                ✓ Rate Understanding
+            </button>
+        </div>
+    </div>
+
+    <!-- Comprehension rating panel (hidden until requested) -->
+    <div id="comprehension-panel" class="hidden bg-white border border-gray-200 rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">How much did you understand?</h2>
+        <p class="text-sm text-gray-500 mb-4">Rate yourself honestly — this helps track your listening improvement.</p>
+        <div class="flex flex-wrap gap-3 justify-center mb-4" id="rating-buttons">
+            {% set levels = [
+                (1, 'Almost nothing', 'bg-red-100 border-red-300 text-red-700 hover:bg-red-200'),
+                (2, 'A little (~25%)', 'bg-orange-100 border-orange-300 text-orange-700 hover:bg-orange-200'),
+                (3, 'About half', 'bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200'),
+                (4, 'Most of it (~75%)', 'bg-lime-100 border-lime-300 text-lime-700 hover:bg-lime-200'),
+                (5, 'Fully understood', 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200')
+            ] %}
+            {% for score, label, classes in levels %}
+            <button onclick="submitComprehension({{ score }}, '{{ label }}')"
+                    class="flex flex-col items-center border rounded-xl py-3 px-4 font-bold text-sm transition {{ classes }} min-w-[110px]">
+                <span class="text-2xl mb-1">
+                    {% if score == 1 %}😞{% elif score == 2 %}😕{% elif score == 3 %}😐{% elif score == 4 %}😊{% else %}🌟{% endif %}
+                </span>
+                {{ label }}
+            </button>
+            {% endfor %}
+        </div>
+        <p class="text-center text-xs text-gray-400">Your rating is saved automatically.</p>
+    </div>
+
+    <!-- Success message after rating (hidden) -->
+    <div id="rating-done" class="hidden bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-center">
+        <p class="text-green-700 font-bold text-lg" id="rating-done-msg"></p>
+        <p class="text-sm text-green-600 mt-1">Session saved. Keep practising to improve your listening! 📈</p>
+        <div class="flex justify-center gap-3 mt-4">
+            <a href="{{ url_for('video.listen', video_id=video.id) }}"
+               class="bg-green-600 text-white font-bold py-2 px-5 rounded-full text-sm hover:bg-green-700 transition">
+                Listen Again
+            </a>
+            <a href="{{ url_for('main.index') }}"
+               class="bg-gray-100 text-gray-700 font-bold py-2 px-5 rounded-full text-sm hover:bg-gray-200 transition">
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Subtitle panel (hidden by default, revealed on button click) -->
+    <div id="subtitle-panel" class="hidden">
+        <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span>📄</span> Full Transcript
+        </h2>
+        <div class="bg-white rounded-xl shadow border border-gray-100 divide-y divide-gray-100 max-h-[60vh] overflow-y-auto">
+            {% for sub in subtitles %}
+            <div class="flex gap-4 px-5 py-3 hover:bg-gray-50 transition subtitle-line"
+                 data-start="{{ sub.start_ms }}" data-end="{{ sub.end_ms }}">
+                <span class="text-xs text-gray-400 font-mono shrink-0 mt-0.5 w-14 text-right">
+                    {{ '%d:%02d' | format(sub.start_ms // 60000, (sub.start_ms % 60000) // 1000) }}
+                </span>
+                <p class="text-gray-800 text-sm leading-relaxed flex-1">
+                    {% for word in sub.text.split() %}
+                    <span class="hover:text-blue-600 hover:font-bold transition-colors cursor-help rounded px-0.5"
+                          onclick="addWord('{{ word | replace("'", "\\'") | replace(".", "") | replace(",", "") | replace("?", "") }}', '{{ video.id }}')">
+                        {{ word }}
+                    </span>
+                    {% endfor %}
+                </p>
+            </div>
+            {% else %}
+            <p class="px-5 py-8 text-center text-gray-400">No subtitles available for this video.</p>
+            {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 mt-2 text-right">Click any word to save it to your wordbook.</p>
+    </div>
+
+    <!-- Keyboard hint -->
+    <div class="mt-6 flex justify-center gap-6 text-xs text-gray-400 select-none flex-wrap">
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">S</kbd> Toggle subtitles</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">C</kbd> Rate understanding</span>
+    </div>
+</div>
+
+<script>
+    // ── YouTube Player ────────────────────────────────────────────────────────
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]);
+
+    let player;
+    let watchInterval = null;
+    let internalWatchTime = 0;
+    let sessionSaved = false;
+
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
+            videoId: '{{ video.youtube_id }}',
+            playerVars: {
+                'autoplay': 0,
+                'mute': 0,
+                'playsinline': 1,
+                'rel': 0,
+                'modestbranding': 1,
+                'enablejsapi': 1,
+                'origin': window.location.origin
+            },
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    }
+
+    function onPlayerError(event) {
+        const titleEl = document.getElementById('error-title');
+        const msgEl   = document.getElementById('error-message');
+        document.getElementById('player-error').classList.remove('hidden');
+        switch (event.data) {
+            case 2:   titleEl.innerText = 'Invalid Video';          msgEl.innerText = 'The video ID is invalid.'; break;
+            case 5:   titleEl.innerText = 'Playback Error';         msgEl.innerText = 'An HTML5 player error occurred.'; break;
+            case 100: titleEl.innerText = 'Video Not Found';        msgEl.innerText = 'This video is private or has been removed.'; break;
+            case 101:
+            case 150: titleEl.innerText = 'Embedding Restricted';   msgEl.innerText = 'The owner allows playback only on YouTube or official partners.'; break;
+            default:  titleEl.innerText = 'Video Unavailable';      msgEl.innerText = 'An unknown error occurred (' + event.data + ').';
+        }
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+            if (!watchInterval) {
+                watchInterval = setInterval(() => {
+                    internalWatchTime++;
+                    highlightActiveLine();
+                    if (internalWatchTime % 30 === 0) saveLearningSession(30);
+                }, 1000);
+            }
+        } else {
+            if (watchInterval) {
+                clearInterval(watchInterval);
+                watchInterval = null;
+                const remainder = internalWatchTime % 30;
+                if (remainder > 5) saveLearningSession(remainder);
+            }
+        }
+    }
+
+    function saveLearningSession(seconds) {
+        fetch('{{ url_for("video.record_session") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: '{{ video.id }}', duration: seconds })
+        }).catch(() => {});
+    }
+
+    // ── Subtitle toggle ───────────────────────────────────────────────────────
+    let subtitlesVisible = false;
+
+    function toggleSubtitles() {
+        subtitlesVisible = !subtitlesVisible;
+        const panel    = document.getElementById('subtitle-panel');
+        const statusIcon = document.getElementById('sub-status-icon');
+        const statusText = document.getElementById('sub-status-text');
+        const btnIcon  = document.getElementById('reveal-btn-icon');
+        const btnLabel = document.getElementById('reveal-btn-label');
+
+        if (subtitlesVisible) {
+            panel.classList.remove('hidden');
+            statusIcon.className = 'w-2.5 h-2.5 rounded-full bg-green-400 inline-block';
+            statusText.textContent = 'Subtitles visible';
+            btnIcon.textContent = '🙈';
+            btnLabel.textContent = 'Hide Subtitles';
+        } else {
+            panel.classList.add('hidden');
+            statusIcon.className = 'w-2.5 h-2.5 rounded-full bg-gray-300 inline-block';
+            statusText.textContent = 'Subtitles hidden';
+            btnIcon.textContent = '👁';
+            btnLabel.textContent = 'Reveal Subtitles';
+        }
+    }
+
+    // Highlight transcript line matching current playback time
+    function highlightActiveLine() {
+        if (!player || !subtitlesVisible) return;
+        const nowMs = player.getCurrentTime() * 1000;
+        document.querySelectorAll('.subtitle-line').forEach(line => {
+            const start = parseInt(line.dataset.start);
+            const end   = parseInt(line.dataset.end);
+            if (nowMs >= start && nowMs <= end) {
+                if (!line.classList.contains('bg-blue-50')) {
+                    line.classList.add('bg-blue-50', 'border-l-4', 'border-blue-400');
+                }
+            } else {
+                line.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-400');
+            }
+        });
+    }
+
+    // ── Comprehension rating ──────────────────────────────────────────────────
+    function showComprehensionCheck() {
+        const panel = document.getElementById('comprehension-panel');
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function submitComprehension(score, label) {
+        // Disable rating buttons to prevent double submission
+        document.querySelectorAll('#rating-buttons button').forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+
+        // Save the remaining watch time as a session
+        if (internalWatchTime > 5) saveLearningSession(internalWatchTime % 30 || internalWatchTime);
+
+        const emojiMap = { 1: '😞', 2: '😕', 3: '😐', 4: '😊', 5: '🌟' };
+        document.getElementById('rating-done-msg').textContent =
+            `${emojiMap[score]} You rated your understanding: "${label}"`;
+
+        document.getElementById('comprehension-panel').classList.add('hidden');
+        document.getElementById('rating-done').classList.remove('hidden');
+        document.getElementById('rating-done').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── Add word to vocabulary ────────────────────────────────────────────────
+    function addWord(word, videoId) {
+        fetch('{{ url_for("vocab.add_word") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: word, video_id: videoId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-5 py-3 rounded-lg shadow-xl z-50 text-sm font-medium';
+            toast.textContent = data.message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        });
+    }
+
+    // ── Keyboard shortcuts ────────────────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (e.code === 'KeyS') { e.preventDefault(); toggleSubtitles(); }
+        if (e.code === 'KeyC') { e.preventDefault(); showComprehensionCheck(); }
+    });
+</script>
+{% endblock %}
