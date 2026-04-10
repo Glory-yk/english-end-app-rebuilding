@@ -1,5 +1,7 @@
+import csv
+import io
 from datetime import datetime
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
 from app.models.vocabulary import Vocabulary, UserVocabulary
 from app.models.profile import Profile
@@ -54,6 +56,52 @@ def add_word():
         return jsonify({'status': 'added', 'message': f"'{word_text}' added to your wordbook!"})
     
     return jsonify({'status': 'exists', 'message': f"'{word_text}' is already in your wordbook."})
+
+@vocab_bp.route('/remove/<word_id>', methods=['POST'])
+@login_required
+def remove_word(word_id):
+    """Remove a word from the user's vocabulary."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    user_word = UserVocabulary.query.filter_by(id=word_id, profile_id=profile.id).first_or_404()
+    word_text = user_word.vocabulary.word
+    db.session.delete(user_word)
+    db.session.commit()
+    flash(f"'{word_text}' removed from your wordbook.")
+    return redirect(url_for('vocab.index'))
+
+@vocab_bp.route('/export')
+@login_required
+def export_csv():
+    """Export user's vocabulary list as a CSV file."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.")
+        return redirect(url_for('vocab.index'))
+
+    words = UserVocabulary.query.filter_by(profile_id=profile.id).order_by(UserVocabulary.status).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Word', 'Phonetic', 'Meaning (KO)', 'Part of Speech', 'Example (EN)', 'Status', 'Next Review'])
+    for item in words:
+        v = item.vocabulary
+        writer.writerow([
+            v.word,
+            v.phonetic or '',
+            v.meaning_ko,
+            v.pos or '',
+            v.example_en or '',
+            item.status,
+            item.next_review.strftime('%Y-%m-%d') if item.next_review else '',
+        ])
+
+    output.seek(0)
+    filename = f"vocabulary_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 @vocab_bp.route('/review')
 @login_required
