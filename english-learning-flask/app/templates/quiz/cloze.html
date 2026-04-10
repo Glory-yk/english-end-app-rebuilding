@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Cloze Quiz</h1>
+                <p class="text-gray-500 text-sm mt-1">Fill in the blank with the word that fits the sentence.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div id="progress-bar" class="bg-orange-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="progress-label" class="text-right text-xs text-gray-400 mb-6">
+            Question <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8 min-h-[340px] flex flex-col justify-between">
+
+            <!-- Sentence display -->
+            <div class="mb-6">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 text-center">
+                    Which word fits the blank?
+                </p>
+                <!-- The sentence with a styled blank -->
+                <div id="q-sentence"
+                     class="text-lg leading-relaxed text-gray-800 bg-orange-50 border border-orange-200 rounded-xl p-4 text-center font-medium">
+                </div>
+                <!-- Meaning hint (shown after answering) -->
+                <div id="meaning-hint" class="hidden mt-3 text-center text-sm text-gray-500 italic"></div>
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <!-- Feedback bar -->
+            <div id="feedback" class="hidden text-center mt-4 py-3 rounded-xl font-bold text-lg"></div>
+
+            <!-- Pronunciation + Next -->
+            <div class="flex items-center justify-between mt-6">
+                <button id="speak-btn" onclick="speakWord()" title="Pronounce the correct word"
+                        class="hidden text-orange-400 hover:text-orange-600 text-2xl transition"
+                        aria-label="Pronounce correct word">&#128266;</button>
+                <div class="flex-1 text-center">
+                    <button id="next-btn" onclick="nextQuestion()"
+                            class="hidden bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-8 rounded-full transition">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results screen (hidden until done) -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-2"></h2>
+            <p id="result-sub" class="text-gray-500 mb-6"></p>
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <span class="text-5xl font-black text-orange-500" id="result-score"></span>
+                <span class="text-gray-400 text-lg">/ {{ total }}</span>
+            </div>
+
+            <!-- Missed sentences review -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Sentences to revisit:</h3>
+                <ul id="missed-list" class="space-y-3"></ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.cloze') }}"
+                   class="bg-orange-500 text-white font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition">
+                    Play Again
+                </a>
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition">
+                    SRS Review →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1–4</kbd> choose &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> next &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> pronounce
+        </p>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = {{ questions_json|safe }};
+let current = 0;
+let score = 0;
+let answered = false;
+const missed = [];
+
+// Build options list for each question on the fly (stored separately)
+const OPTIONS = QUESTIONS.map(q => {
+    // Distractors are already baked into questions_json — rebuild 4-option list here
+    // The server already shuffled; we just need them stored per-question.
+    return null; // options come from server-rendered JSON
+});
+
+function speakWord() {
+    const word = QUESTIONS[current]?.correct;
+    if (!word || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+function renderSentence(blanked) {
+    // Style the ___ blank prominently
+    return blanked.replace(
+        /___/g,
+        '<span class="inline-block border-b-4 border-orange-400 px-4 mx-1 font-black text-orange-500 text-xl min-w-[3rem]">&nbsp;&nbsp;&nbsp;&nbsp;</span>'
+    );
+}
+
+function renderQuestion() {
+    const q = QUESTIONS[current];
+    answered = false;
+
+    // Sentence with styled blank
+    document.getElementById('q-sentence').innerHTML = renderSentence(q.blanked);
+    document.getElementById('meaning-hint').classList.add('hidden');
+    document.getElementById('speak-btn').classList.add('hidden');
+
+    document.getElementById('q-num').textContent = current + 1;
+    const pct = (current / QUESTIONS.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    // Build option buttons — options come from the question object
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    // We need 4 options per question; server randomises them and puts correct among them.
+    // Rebuild from the question's distractor list + correct word.
+    // Since we only stored blanked/correct/meaning in q, we reconstruct options client-side.
+    // Actually, the server JSON already sends options embedded — let's use q.options if present,
+    // otherwise fall back to generating them from all QUESTIONS data.
+    const opts = q.options || (() => {
+        // fallback: collect 3 other correct words + this one
+        const others = QUESTIONS
+            .filter((_, i) => i !== current)
+            .map(x => x.correct);
+        const sample = [];
+        const shuffled = others.sort(() => Math.random() - 0.5);
+        for (const w of shuffled) {
+            if (!sample.includes(w) && sample.length < 3) sample.push(w);
+        }
+        const all = [...sample, q.correct].sort(() => Math.random() - 0.5);
+        return all;
+    })();
+
+    opts.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn py-3 px-5 rounded-xl border-2 border-gray-200 text-gray-800 text-sm font-semibold text-left hover:border-orange-400 hover:bg-orange-50 transition-all';
+        btn.dataset.opt = opt;
+        btn.innerHTML = `<span class="text-gray-400 font-mono mr-2">${idx + 1}</span>${opt}`;
+        btn.onclick = () => chooseOption(opt);
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+}
+
+function chooseOption(chosen) {
+    if (answered) return;
+    answered = true;
+
+    const q = QUESTIONS[current];
+    const isCorrect = chosen.toLowerCase() === q.correct.toLowerCase();
+    if (isCorrect) score++;
+    else missed.push(q);
+
+    // Colour the buttons
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.disabled = true;
+        const opt = btn.dataset.opt;
+        if (opt.toLowerCase() === q.correct.toLowerCase()) {
+            btn.classList.replace('border-gray-200', 'border-green-500');
+            btn.classList.add('bg-green-50', 'text-green-800');
+        } else if (opt === chosen && !isCorrect) {
+            btn.classList.replace('border-gray-200', 'border-red-400');
+            btn.classList.add('bg-red-50', 'text-red-800', 'line-through');
+        }
+    });
+
+    // Reveal the filled sentence
+    const filled = q.sentence.replace(
+        new RegExp('(?<![a-zA-Z\'-])' + q.correct.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '(?![a-zA-Z\'-])', 'i'),
+        `<strong class="text-orange-600">${q.correct}</strong>`
+    );
+    document.getElementById('q-sentence').innerHTML = filled;
+
+    // Show meaning hint
+    if (q.meaning) {
+        const hint = document.getElementById('meaning-hint');
+        hint.textContent = q.meaning + (q.phonetic ? `  /${q.phonetic}/` : '');
+        hint.classList.remove('hidden');
+    }
+
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct!';
+    } else {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-red-100 text-red-700';
+        fb.textContent = `✗ The word was: ${q.correct}`;
+    }
+
+    document.getElementById('speak-btn').classList.remove('hidden');
+    document.getElementById('next-btn').classList.remove('hidden');
+
+    // Auto-pronounce the correct word
+    setTimeout(() => speakWord(), 200);
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= QUESTIONS.length) {
+        showResults();
+    } else {
+        renderQuestion();
+    }
+}
+
+function showResults() {
+    document.getElementById('quiz-card').classList.add('hidden');
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+
+    document.getElementById('result-score').textContent = score;
+    const pct = Math.round((score / QUESTIONS.length) * 100);
+    document.getElementById('progress-bar').style.width = '100%';
+
+    let emoji, heading, sub;
+    if (pct === 100) {
+        emoji = '🏆'; heading = 'Perfect Score!'; sub = 'You know every word in context — outstanding!';
+    } else if (pct >= 80) {
+        emoji = '🎉'; heading = 'Great Job!'; sub = 'You\'re reading in context really well.';
+    } else if (pct >= 50) {
+        emoji = '💪'; heading = 'Good Effort!'; sub = 'Keep practising — context clues will click.';
+    } else {
+        emoji = '📖'; heading = 'Keep Studying!'; sub = 'Review these words in SRS and try again.';
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    if (missed.length > 0) {
+        const sec = document.getElementById('missed-section');
+        sec.classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(q => {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm';
+            li.innerHTML =
+                `<p class="text-gray-500 italic mb-1">"${q.blanked.replace(/___/, '<span class="font-black text-red-600">' + q.correct + '</span>')}"</p>` +
+                `<p class="text-xs text-gray-400">${q.meaning}</p>`;
+            list.appendChild(li);
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const keyMap = { 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3 };
+    if (e.code in keyMap && !answered) {
+        e.preventDefault();
+        const btns = document.querySelectorAll('.option-btn');
+        const btn = btns[keyMap[e.code]];
+        if (btn) btn.click();
+    }
+    if (e.code === 'Enter' && answered) {
+        e.preventDefault();
+        document.getElementById('next-btn').click();
+    }
+    if (e.code === 'KeyR') {
+        e.preventDefault();
+        speakWord();
+    }
+});
+
+// Attach options to each question (needed for renderQuestion fallback)
+// The server sends options embedded in each question dict via questions_json
+// (they are already there as q.options when the route passes them)
+
+// Start
+renderQuestion();
+</script>
+{% endblock %}

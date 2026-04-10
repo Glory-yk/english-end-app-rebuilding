@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 21:30 - [Quiz] Cloze (fill-in-the-blank) quiz from real subtitle sentences
+Added a third quiz mode to the Quiz Hub: Cloze Quiz (`/quiz/cloze`). The server scans all subtitle lines for sentences that contain a word from the user's personal wordbook, blanks out that word, and presents the sentence with four multiple-choice options (correct vocabulary word + 3 distractors from the same wordbook). Up to 8 questions are served per session; each answer reveals the filled sentence, the word's Korean meaning/phonetic, and auto-pronounces the correct word via Web Speech API. Keyboard shortcuts (1–4 choose, Enter next, R pronounce), a missed-sentences review panel on the results screen, and a styled orange card in the Quiz Hub index complete the feature.
+
 ## 2026-04-10 20:00 - [UI/UX] Live search, status filter, and column sort for vocabulary wordbook
 Added a live-search input and five status-filter pills (All / New / Learning / Review / Mastered) above the wordbook table, each showing a real-time count badge. Clicking a column header (Word, Status, Next Review) sorts the visible rows ascending/descending with a directional arrow indicator. All filtering and sorting run entirely in the browser — zero backend changes — and a "Showing X of Y words" counter and a "no results" empty state keep the user oriented when searches return nothing.
 

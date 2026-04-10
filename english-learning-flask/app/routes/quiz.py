@@ -1,4 +1,5 @@
 import json
+import re
 import random
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -142,4 +143,108 @@ def sentence_scramble():
         'quiz/sentence_scramble.html',
         sentences_json=json.dumps(sentences, ensure_ascii=False),
         total=len(sentences),
+    )
+
+
+@quiz_bp.route('/cloze')
+@login_required
+def cloze():
+    """Cloze (fill-in-the-blank) quiz: pick the vocabulary word that fits a real subtitle sentence."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_user_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_user_words) < 4:
+        flash("You need at least 4 words in your wordbook to take a Cloze quiz.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Map lowercase word -> UserVocabulary for fast lookup
+    word_to_uv = {uv.vocabulary.word.lower(): uv for uv in all_user_words}
+
+    # Fetch all subtitle lines (exclude system markers)
+    all_subs = (
+        Subtitle.query
+        .filter(~Subtitle.text.startswith('[System:'))
+        .filter(Subtitle.text != '')
+        .all()
+    )
+
+    # Shuffle so we get variety across runs
+    random.shuffle(all_subs)
+
+    questions = []
+    used_words = set()
+    _punct_re = re.compile(r"[^a-zA-Z'-]")
+
+    for sub in all_subs:
+        if len(questions) >= 8:
+            break
+        tokens = sub.text.split()
+        for token in tokens:
+            clean = _punct_re.sub('', token).lower()
+            if not clean or clean in used_words:
+                continue
+            if clean not in word_to_uv:
+                continue
+
+            uv = word_to_uv[clean]
+            used_words.add(clean)
+
+            # Build blanked sentence (replace first occurrence, case-insensitive)
+            blanked = re.sub(
+                r'(?<![a-zA-Z\'-])' + re.escape(clean) + r'(?![a-zA-Z\'-])',
+                '___',
+                sub.text.strip(),
+                count=1,
+                flags=re.IGNORECASE,
+            )
+
+            # If no blank was created (edge case), skip
+            if '___' not in blanked:
+                continue
+
+            # Distractors: other words from the wordbook (different from correct)
+            distractor_pool = [
+                uv2.vocabulary.word
+                for uv2 in all_user_words
+                if uv2.vocabulary.word.lower() != clean
+            ]
+            if len(distractor_pool) < 3:
+                continue
+
+            distractors = random.sample(distractor_pool, 3)
+            options = distractors + [uv.vocabulary.word]
+            random.shuffle(options)
+
+            questions.append({
+                'sentence': sub.text.strip(),
+                'blanked': blanked,
+                'correct': uv.vocabulary.word,
+                'meaning': uv.vocabulary.meaning_ko,
+                'phonetic': uv.vocabulary.phonetic or '',
+                'pos': uv.vocabulary.pos or '',
+                'options': options,
+            })
+            break  # one question per subtitle line
+
+    if len(questions) < 3:
+        flash(
+            "Not enough subtitle content matches your vocabulary yet. "
+            "Watch more videos and save words to unlock the Cloze Quiz!",
+            'warning',
+        )
+        return redirect(url_for('quiz.index'))
+
+    return render_template(
+        'quiz/cloze.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
     )
