@@ -20,12 +20,12 @@ def add():
     if request.method == 'POST':
         url = request.form.get('url', '').strip()
         if not url:
-            flash("Please provide a valid YouTube URL.")
+            flash("Please provide a valid YouTube URL.", 'error')
             return redirect(url_for('channels.index'))
-            
+
         video_id = YouTubeService.get_video_id(url)
         if not video_id:
-            flash("Invalid YouTube URL.")
+            flash("Invalid YouTube URL.", 'error')
             return redirect(url_for('channels.index'))
 
         # 1. Early check
@@ -38,7 +38,7 @@ def add():
         if video:
             return redirect(url_for('video.detail', video_id=video.id))
         else:
-            flash(f"Error: {message}")
+            flash(f"Error: {message}", 'error')
             return redirect(url_for('channels.index'))
             
     return render_template('video/add.html')
@@ -53,7 +53,7 @@ def add_sample():
     
     existing_video = Video.query.filter_by(youtube_id=video_id).first()
     if existing_video:
-        flash("Sample video already exists! Enjoy learning.")
+        flash("Sample video already exists! Enjoy learning.", 'warning')
         return redirect(url_for('video.detail', video_id=existing_video.id))
 
     try:
@@ -82,11 +82,11 @@ def add_sample():
             db.session.add(sub)
         
         db.session.commit()
-        flash("Sample video added successfully!")
+        flash("Sample video added successfully!", 'success')
         return redirect(url_for('video.detail', video_id=video.id))
     except Exception as e:
         db.session.rollback()
-        flash(f"Error creating sample: {str(e)}")
+        flash(f"Error creating sample: {str(e)}", 'error')
         return redirect(url_for('video.add'))
 
 from app.models.progress import LearningSession

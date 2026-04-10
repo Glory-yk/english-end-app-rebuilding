@@ -66,7 +66,7 @@ def remove_word(word_id):
     word_text = user_word.vocabulary.word
     db.session.delete(user_word)
     db.session.commit()
-    flash(f"'{word_text}' removed from your wordbook.")
+    flash(f"'{word_text}' removed from your wordbook.", 'success')
     return redirect(url_for('vocab.index'))
 
 @vocab_bp.route('/export')
@@ -75,7 +75,7 @@ def export_csv():
     """Export user's vocabulary list as a CSV file."""
     profile = Profile.query.filter_by(user_id=current_user.id).first()
     if not profile:
-        flash("No profile found.")
+        flash("No profile found.", 'error')
         return redirect(url_for('vocab.index'))
 
     words = UserVocabulary.query.filter_by(profile_id=profile.id).order_by(UserVocabulary.status).all()

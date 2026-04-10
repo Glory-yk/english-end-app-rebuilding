@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 00:04 - [UI/UX] Auto-dismissing toast notifications for flash messages
+Replaced the static blue-banner flash message system in base.html with animated, auto-dismissing toast notifications positioned at the bottom-right. Toasts slide in on page load, auto-dismiss after 4.5s, and are color-coded by category (red=error, green=success, yellow=warning, blue=default). Updated all flash() calls in auth.py, channels.py, video.py, and vocabulary.py to pass appropriate categories so every user-facing action now gives clear visual feedback.
+
 ## 2026-04-10 00:03 - [Dashboard] Word of the Day widget
 Added a prominent gradient banner to the dashboard that surfaces one vocabulary word per day (deterministic: same word all day, different each day via date+profile MD5 seed). Shows word, phonetic, POS badge, Korean meaning, and example sentence, with a direct "Review Now" CTA. Falls back to an empty-state CTA when the user's wordbook is empty.
 

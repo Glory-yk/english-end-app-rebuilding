@@ -40,19 +40,19 @@ def add():
                 if match:
                     channel_id = match.group(1)
         except Exception as e:
-            flash(f"Could not extract channel ID: {str(e)}")
+            flash(f"Could not extract channel ID: {str(e)}", 'error')
             return redirect(url_for('channels.index'))
-    
+
     if not channel_id:
-        flash("Channel ID or URL is required.")
+        flash("Channel ID or URL is required.", 'error')
         return redirect(url_for('channels.index'))
 
     profile = Profile.query.filter_by(user_id=current_user.id).first()
-    
+
     # Check if already exists
     existing = Channel.query.filter_by(profile_id=profile.id, youtube_channel_id=channel_id).first()
     if existing:
-        flash("Channel already subscribed.")
+        flash("Channel already subscribed.", 'warning')
         return redirect(url_for('channels.index'))
 
     new_channel = Channel(
@@ -63,7 +63,7 @@ def add():
     )
     db.session.add(new_channel)
     db.session.commit()
-    flash(f"Subscribed to {name}!")
+    flash(f"Subscribed to {name}!", 'success')
     return redirect(url_for('channels.index'))
 
 @channels_bp.route('/view/<channel_id>')
@@ -83,16 +83,16 @@ def edit(channel_id):
     
     # Verify ownership
     if channel.profile_id != profile.id:
-        flash("You do not have permission to edit this channel.")
+        flash("You do not have permission to edit this channel.", 'error')
         return redirect(url_for('channels.index'))
-    
+
     new_name = request.form.get('name', '').strip()
     if new_name:
         channel.name = new_name
         db.session.commit()
-        flash(f"Channel updated to {new_name}")
+        flash(f"Channel updated to {new_name}", 'success')
     else:
-        flash("Channel name cannot be empty.")
+        flash("Channel name cannot be empty.", 'error')
         
     return redirect(url_for('channels.index'))
 
@@ -105,13 +105,13 @@ def delete(channel_id):
     
     # Verify ownership
     if channel.profile_id != profile.id:
-        flash("You do not have permission to delete this channel.")
+        flash("You do not have permission to delete this channel.", 'error')
         return redirect(url_for('channels.index'))
-    
+
     channel_name = channel.name
     db.session.delete(channel)
     db.session.commit()
-    flash(f"Unsubscribed from {channel_name}.")
+    flash(f"Unsubscribed from {channel_name}.", 'success')
     
     return redirect(url_for('channels.index'))
 

@@ -17,7 +17,7 @@ def login():
         user = User.query.filter_by(email=email).first()
         
         if user is None or not user.check_password(password):
-            flash('Invalid email or password')
+            flash('Invalid email or password', 'error')
             return redirect(url_for('auth.login'))
             
         login_user(user)
@@ -36,7 +36,7 @@ def register():
         name = request.form.get('name')
         
         if User.query.filter_by(email=email).first():
-            flash('Email address already exists')
+            flash('Email address already exists', 'error')
             return redirect(url_for('auth.register'))
             
         # Create User
