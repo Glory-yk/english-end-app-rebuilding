@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 22:00 - [Quiz/UX] Quiz score history panel on Quiz Hub (localStorage)
+Each quiz (Vocabulary Challenge, Sentence Scramble, Cloze Quiz) now saves its result (type, icon, score, total, percentage, timestamp) to `localStorage` on completion via a shared `saveQuizResult()` helper. The Quiz Hub page reads this history and renders a "My Recent Scores" strip showing the last 5 results as color-coded cards (green ≥80%, yellow ≥50%, red below) that appear automatically once any quiz has been completed — no server or schema changes required.
+
 ## 2026-04-10 21:30 - [Quiz] Cloze (fill-in-the-blank) quiz from real subtitle sentences
 Added a third quiz mode to the Quiz Hub: Cloze Quiz (`/quiz/cloze`). The server scans all subtitle lines for sentences that contain a word from the user's personal wordbook, blanks out that word, and presents the sentence with four multiple-choice options (correct vocabulary word + 3 distractors from the same wordbook). Up to 8 questions are served per session; each answer reveals the filled sentence, the word's Korean meaning/phonetic, and auto-pronounces the correct word via Web Speech API. Keyboard shortcuts (1–4 choose, Enter next, R pronounce), a missed-sentences review panel on the results screen, and a styled orange card in the Quiz Hub index complete the feature.
 

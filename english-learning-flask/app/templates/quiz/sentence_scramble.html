@@ -287,7 +287,18 @@ function nextQuestion() {
     }
 }
 
+function saveQuizResult(type, icon, s, total) {
+    try {
+        const MAX = 10, KEY = 'englearn_quiz_history';
+        const hist = JSON.parse(localStorage.getItem(KEY) || '[]');
+        hist.unshift({ type, icon, score: s, total, pct: Math.round(s / total * 100), ts: Date.now() });
+        if (hist.length > MAX) hist.splice(MAX);
+        localStorage.setItem(KEY, JSON.stringify(hist));
+    } catch (e) {}
+}
+
 function showResults() {
+    saveQuizResult('Sentence Scramble', '🔀', score, SENTENCES.length);
     document.getElementById('quiz-card').classList.add('hidden');
     document.getElementById('results-screen').classList.remove('hidden');
     document.getElementById('progress-bar').style.width = '100%';
