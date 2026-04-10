@@ -15,7 +15,39 @@ def index():
     if current_user.is_authenticated:
         profile = Profile.query.filter_by(user_id=current_user.id).first()
         recent_sessions = LearningSession.query.filter_by(profile_id=profile.id).order_by(LearningSession.created_at.desc()).limit(5).all()
-        return render_template('main/dashboard.html', profile=profile, sessions=recent_sessions)
+
+        # Today's watched minutes
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_sec = db.session.query(func.sum(LearningSession.watched_sec)).filter(
+            LearningSession.profile_id == profile.id,
+            LearningSession.created_at >= today_start
+        ).scalar() or 0
+        today_minutes = today_sec // 60
+
+        # Daily goal progress percentage (capped at 100)
+        goal_min = profile.daily_goal_min or 30
+        goal_pct = min(100, round(today_minutes / goal_min * 100)) if goal_min else 0
+
+        # Mastered words count
+        mastered_count = UserVocabulary.query.filter_by(
+            profile_id=profile.id, status='mastered'
+        ).count()
+
+        # Average quiz score (from sessions that have quiz scores)
+        avg_quiz_raw = db.session.query(func.avg(LearningSession.quiz_score)).filter(
+            LearningSession.profile_id == profile.id,
+            LearningSession.quiz_score.isnot(None)
+        ).scalar()
+        avg_quiz_pct = round(avg_quiz_raw * 100) if avg_quiz_raw is not None else None
+
+        return render_template('main/dashboard.html',
+                               profile=profile,
+                               sessions=recent_sessions,
+                               today_minutes=today_minutes,
+                               goal_min=goal_min,
+                               goal_pct=goal_pct,
+                               mastered_count=mastered_count,
+                               avg_quiz_pct=avg_quiz_pct)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
