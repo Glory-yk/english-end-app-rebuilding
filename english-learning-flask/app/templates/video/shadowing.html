@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="text-gray-400 hover:text-gray-700 transition text-sm font-medium">← Back to Video</a>
+        <div>
+            <h1 class="text-2xl font-bold leading-tight">Sentence Shadowing</h1>
+            <p class="text-gray-500 text-sm truncate max-w-xs">{{ video.title }}</p>
+        </div>
+    </div>
+
+    {% if not subtitles %}
+    <div class="bg-white rounded-xl shadow p-12 text-center">
+        <div class="text-5xl mb-4">🗣️</div>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">No subtitles available</h2>
+        <p class="text-gray-500 mb-6">This video has no subtitle lines to practise with.</p>
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition">Go Back</a>
+    </div>
+
+    {% else %}
+
+    <!-- How-to tip -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-5 flex items-start gap-3">
+        <span class="text-blue-400 text-lg mt-0.5">💡</span>
+        <p class="text-blue-700 text-sm">
+            <strong>How to shadow:</strong> Press <kbd class="bg-white border border-blue-300 px-1 rounded font-mono text-xs">Space</kbd>
+            to hear the line, then <strong>speak it aloud</strong> mimicking the rhythm and intonation.
+            Reveal the text afterwards to check yourself.
+        </p>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="flex items-center justify-between mb-2">
+        <span id="progress-label" class="text-sm font-bold text-gray-500">Line 1 of {{ subtitles|length }}</span>
+        <span id="score-label" class="text-sm font-bold text-green-600"></span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+        <div id="progress-bar" class="bg-violet-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+
+    <!-- Main card -->
+    <div id="shadow-card" class="bg-white rounded-xl shadow-2xl p-8 min-h-[340px] flex flex-col items-center justify-center text-center">
+
+        <!-- State: listen (initial) -->
+        <div id="state-listen">
+            <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6">Listen, then shadow aloud</p>
+            <button id="play-btn" onclick="playLine()"
+                    class="w-28 h-28 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-full flex items-center justify-center shadow-xl transition-transform mx-auto"
+                    aria-label="Play this line">
+                <svg class="w-12 h-12 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            <p class="text-gray-400 text-xs mt-4">Click or press <kbd class="bg-gray-100 border border-gray-300 px-1 rounded font-mono">Space</kbd></p>
+        </div>
+
+        <!-- State: shadow (after audio plays — prompt user to speak) -->
+        <div id="state-shadow" class="hidden w-full">
+            <div class="mb-5">
+                <span class="inline-flex items-center gap-2 bg-violet-100 text-violet-700 text-sm font-bold px-4 py-2 rounded-full animate-pulse">
+                    <span class="text-lg">🗣️</span> Speak it aloud now…
+                </span>
+            </div>
+            <p class="text-gray-400 text-sm mb-6">Mimic the rhythm, stress, and intonation you heard.</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="playLine()"
+                        class="inline-flex items-center gap-2 border border-violet-300 text-violet-600 hover:bg-violet-50 font-bold py-2 px-5 rounded-full transition text-sm">
+                    🔊 Hear Again
+                </button>
+                <button onclick="showReveal()"
+                        class="bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-bold py-2 px-7 rounded-full transition-transform text-sm">
+                    Reveal Text →
+                </button>
+            </div>
+        </div>
+
+        <!-- State: reveal (text shown, self-assess) -->
+        <div id="state-reveal" class="hidden w-full">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Did you get it?</p>
+            <p id="reveal-text" class="text-2xl font-bold text-gray-800 leading-snug mb-6"></p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="playLine()"
+                        class="inline-flex items-center gap-2 border border-gray-300 text-gray-600 hover:bg-gray-50 font-bold py-2 px-5 rounded-full transition text-sm">
+                    🔊 Replay
+                </button>
+                <button onclick="rateLine(false)"
+                        class="bg-orange-400 hover:bg-orange-500 active:scale-95 text-white font-bold py-2 px-5 rounded-full transition-transform text-sm">
+                    ↺ Try Again
+                </button>
+                <button onclick="rateLine(true)"
+                        class="bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold py-2 px-6 rounded-full transition-transform text-sm">
+                    ✓ Got it!
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Completion screen (hidden) -->
+    <div id="completion-screen" class="hidden bg-white rounded-xl shadow-2xl p-12 text-center">
+        <div class="text-6xl mb-4">🎉</div>
+        <h2 class="text-2xl font-bold mb-2">Shadowing Complete!</h2>
+        <p class="text-gray-500 mb-4">
+            You practised <strong>{{ subtitles|length }}</strong> line{{ 's' if subtitles|length != 1 }}.
+        </p>
+        <p class="text-4xl font-black text-violet-600 mb-1" id="final-score"></p>
+        <p class="text-gray-400 text-sm mb-8" id="final-detail"></p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{{ url_for('video.shadowing', video_id=video.id) }}"
+               class="bg-violet-600 text-white font-bold py-3 px-8 rounded-full hover:bg-violet-700 transition">
+                Shadow Again
+            </a>
+            <a href="{{ url_for('video.detail', video_id=video.id) }}"
+               class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                Back to Video
+            </a>
+        </div>
+    </div>
+
+    <!-- Keyboard hint bar -->
+    <div class="mt-5 flex justify-center flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400 select-none">
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Space</kbd> Play / Next</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> Reveal text</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">G</kbd> Got it</span>
+        <span><kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">T</kbd> Try again</span>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+    const LINES = {{ subtitles | map(attribute='text') | list | tojson }};
+    let currentIdx = 0;
+    let gotCount = 0;    // lines marked "Got it"
+    let totalDone = 0;   // lines where user reached the reveal step
+
+    // --- TTS ---
+    function speak(text, onDone) {
+        if (!('speechSynthesis' in window)) { if (onDone) onDone(); return; }
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.lang  = 'en-US';
+        utt.rate  = 0.82;
+        utt.pitch = 1;
+        if (onDone) utt.onend = onDone;
+        window.speechSynthesis.speak(utt);
+    }
+
+    function playLine() {
+        speak(LINES[currentIdx], () => showState('shadow'));
+        // Show shadow state immediately so the "Hear Again" button is available mid-speech
+        showState('shadow');
+    }
+
+    // --- State machine ---
+    function showState(state) {
+        ['state-listen', 'state-shadow', 'state-reveal'].forEach(id =>
+            document.getElementById(id).classList.add('hidden')
+        );
+        document.getElementById('state-' + state).classList.remove('hidden');
+    }
+
+    function showReveal() {
+        document.getElementById('reveal-text').textContent = LINES[currentIdx];
+        totalDone++;
+        updateProgress();
+        showState('reveal');
+    }
+
+    function rateLine(gotIt) {
+        if (gotIt) {
+            gotCount++;
+            advanceLine();
+        } else {
+            // Reset to listen state so they try the same line again
+            showState('listen');
+        }
+    }
+
+    function advanceLine() {
+        currentIdx++;
+        if (currentIdx >= LINES.length) {
+            showCompletion();
+            return;
+        }
+        updateProgress();
+        showState('listen');
+    }
+
+    // --- Progress ---
+    function updateProgress() {
+        const total = LINES.length;
+        document.getElementById('progress-label').textContent =
+            `Line ${Math.min(currentIdx + 1, total)} of ${total}`;
+        document.getElementById('progress-bar').style.width =
+            `${Math.round(currentIdx / total * 100)}%`;
+        if (totalDone > 0) {
+            const pct = Math.round(gotCount / totalDone * 100);
+            document.getElementById('score-label').textContent = `${pct}% correct`;
+        }
+    }
+
+    // --- Completion ---
+    function showCompletion() {
+        document.getElementById('shadow-card').classList.add('hidden');
+        document.getElementById('completion-screen').classList.remove('hidden');
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-label').textContent =
+            `Complete! ${LINES.length} line${LINES.length !== 1 ? 's' : ''}`;
+        const pct = totalDone > 0 ? Math.round(gotCount / totalDone * 100) : 0;
+        document.getElementById('final-score').textContent  = `${pct}% nailed it`;
+        document.getElementById('final-detail').textContent =
+            `${gotCount} of ${totalDone} lines marked as confident`;
+    }
+
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', e => {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+        const listenVisible = !document.getElementById('state-listen').classList.contains('hidden');
+        const shadowVisible = !document.getElementById('state-shadow').classList.contains('hidden');
+        const revealVisible = !document.getElementById('state-reveal').classList.contains('hidden');
+
+        if (e.code === 'Space') {
+            e.preventDefault();
+            if (listenVisible || shadowVisible) playLine();
+            else if (revealVisible) rateLine(true); // Space on reveal = Got it
+        } else if (e.code === 'KeyR') {
+            e.preventDefault();
+            if (shadowVisible) showReveal();
+            else if (revealVisible) playLine();
+        } else if (e.code === 'KeyG' && revealVisible) {
+            e.preventDefault();
+            rateLine(true);
+        } else if (e.code === 'KeyT' && revealVisible) {
+            e.preventDefault();
+            rateLine(false);
+        }
+    });
+</script>
+{% endblock %}

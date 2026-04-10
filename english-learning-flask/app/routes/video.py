@@ -127,6 +127,15 @@ def dictation(video_id):
     subs_texts = [s.text for s in real_subs]
     return render_template('video/dictation.html', video=video, subtitles=real_subs, subs_texts=subs_texts)
 
+@video_bp.route('/<video_id>/shadowing')
+@login_required
+def shadowing(video_id):
+    """Sentence shadowing: listen to subtitle lines and repeat them aloud."""
+    video = Video.query.get_or_404(video_id)
+    subtitles = Subtitle.query.filter_by(video_id=video.id).order_by(Subtitle.start_ms).all()
+    real_subs = [s for s in subtitles if not s.text.startswith('[System:')]
+    return render_template('video/shadowing.html', video=video, subtitles=real_subs)
+
 @video_bp.route('/<video_id>')
 @login_required
 def detail(video_id):

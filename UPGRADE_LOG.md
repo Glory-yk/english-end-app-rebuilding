@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 13:00 - [Learning Mode] Sentence shadowing practice for subtitle lines
+Added a dedicated Shadowing Practice page (`/video/<id>/shadowing`) where users listen to each subtitle line via the browser's Web Speech API and then speak it aloud to shadow the speaker's rhythm and intonation. The page shows one line at a time: a large Play button triggers TTS, the user shadows during a prompted "Speak it aloud now…" phase, then clicks Reveal to see the text and self-assesses with "Got it ✓" or "↺ Try Again". A running accuracy score (lines nailed / lines revealed), progress bar, and completion screen are included. Keyboard shortcuts (Space=play/next, R=reveal, G=got it, T=try again) keep the session hands-free. A "Shadowing Practice" button was added alongside the existing Dictation Practice button on every video detail page.
+
 ## 2026-04-10 12:00 - [New Feature] Pomodoro study timer on video detail page
 Added a collapsible Pomodoro timer widget to the video detail page (🍅 button next to Dictation Practice). Clicking the button expands a compact panel showing a colour-coded countdown (red for 25-min Focus, green for 5-min Short Break, blue for 15-min Long Break after every 4 pomodoros), an animated progress bar, a session counter, and Start/Pause/Reset controls. Phase transitions play a Web Audio API beep and auto-start the next phase; the browser tab title mirrors the current countdown so users can glance at it without switching windows. Zero backend changes required.
 
