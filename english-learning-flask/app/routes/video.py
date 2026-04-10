@@ -117,8 +117,20 @@ video_bp = Blueprint('video', __name__)
 @login_required
 def index():
     """List available videos."""
+    from app.models.progress import LearningSession
+    from app.models.profile import Profile
     videos = Video.query.order_by(Video.created_at.desc()).all()
-    return render_template('video/index.html', videos=videos)
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    watched_ids = set()
+    if profile:
+        watched_ids = {
+            row[0] for row in
+            db.session.query(LearningSession.video_id)
+                .filter_by(profile_id=profile.id)
+                .distinct()
+                .all()
+        }
+    return render_template('video/index.html', videos=videos, watched_ids=watched_ids)
 
 @video_bp.route('/add', methods=['GET', 'POST'])
 @login_required

@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 23:30 - [UI/UX] Live search, difficulty filter, watched badges on Video Library
+Replaced the plain video grid with a fully interactive Video Library: a live-search bar filters cards by title or channel name; four difficulty pills (All / Easy / Medium / Hard) and a "✓ Watched" pill filter by `video.difficulty` and whether the current user has a `LearningSession` for that video. Each card gains an inline duration badge, a colour-coded difficulty badge (green/yellow/red), and a "✓ Watched" indigo badge for previously watched videos, plus quick-access Listening Mode and Grammar Pattern buttons on watched cards. An improved empty-library state links to both Add Video and the sample video. All filtering is client-side; the only backend change is a single distinct query of `LearningSession.video_id` for the current profile added to the `index` route.
+
 ## 2026-04-10 22:00 - [Quiz/UX] Quiz score history panel on Quiz Hub (localStorage)
 Each quiz (Vocabulary Challenge, Sentence Scramble, Cloze Quiz) now saves its result (type, icon, score, total, percentage, timestamp) to `localStorage` on completion via a shared `saveQuizResult()` helper. The Quiz Hub page reads this history and renders a "My Recent Scores" strip showing the last 5 results as color-coded cards (green ≥80%, yellow ≥50%, red below) that appear automatically once any quiz has been completed — no server or schema changes required.
 
