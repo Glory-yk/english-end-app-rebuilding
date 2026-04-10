@@ -1,8 +1,115 @@
+import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+from markupsafe import Markup, escape
 from app.services.youtube_service import YouTubeService
 from app.models.video import Video, Subtitle
 from app import db
+
+# ── Grammar pattern detection ─────────────────────────────────────────────────
+_GRAMMAR_PATTERNS = [
+    {
+        'key': 'modals',
+        'label': 'Modal Verbs',
+        'description': 'Expressing ability, permission, or obligation (can / could / should / would / must / may / might / shall).',
+        'icon': '💡',
+        'badge': 'bg-blue-100 text-blue-700',
+        'regex': re.compile(
+            r'\b(can|could|should|would|must|may|might|shall)\s+(?:not\s+)?(?:be\s+)?\w+',
+            re.IGNORECASE,
+        ),
+    },
+    {
+        'key': 'passive',
+        'label': 'Passive Voice',
+        'description': 'The subject receives the action — formed with be + past participle.',
+        'icon': '🔄',
+        'badge': 'bg-purple-100 text-purple-700',
+        'regex': re.compile(
+            r'\b(?:is|are|was|were|be|been|being)\s+\w+(?:ed|en|ied)\b',
+            re.IGNORECASE,
+        ),
+    },
+    {
+        'key': 'conditionals',
+        'label': 'Conditional Sentences',
+        'description': 'If-clauses expressing conditions, hypotheticals, or results.',
+        'icon': '🔀',
+        'badge': 'bg-green-100 text-green-700',
+        'regex': re.compile(
+            r'\bif\s+(?:\w+\s+){1,6}\w+',
+            re.IGNORECASE,
+        ),
+    },
+    {
+        'key': 'present_perfect',
+        'label': 'Present Perfect',
+        'description': 'Have / has + past participle — actions with a link to the present.',
+        'icon': '⏰',
+        'badge': 'bg-amber-100 text-amber-700',
+        'regex': re.compile(
+            r"\b(?:I've|you've|we've|they've|he's|she's|it's|have|has)\s+(?:not\s+)?(?:already\s+|just\s+|never\s+)?\w+(?:ed|en)\b",
+            re.IGNORECASE,
+        ),
+    },
+    {
+        'key': 'comparative',
+        'label': 'Comparatives & Superlatives',
+        'description': 'Comparing people, places, or things using -er than or more / most.',
+        'icon': '📊',
+        'badge': 'bg-red-100 text-red-700',
+        'regex': re.compile(
+            r'\b\w+er\s+than\b|\b(?:more|most|less|least)\s+\w+',
+            re.IGNORECASE,
+        ),
+    },
+    {
+        'key': 'questions',
+        'label': 'Question Forms',
+        'description': 'Inverted word order and wh-questions used in natural speech.',
+        'icon': '❓',
+        'badge': 'bg-teal-100 text-teal-700',
+        'regex': re.compile(
+            r'^(?:Do|Does|Did|Is|Are|Was|Were|Have|Has|Had|Can|Could|Will|Would|Should|What|Where|When|Why|How|Who)\s+\w+',
+            re.IGNORECASE,
+        ),
+    },
+]
+
+_MAX_EXAMPLES = 6
+
+
+def _make_highlighted(full_text, match_text):
+    """Return a Markup string with match_text wrapped in a yellow <mark>."""
+    esc_full = str(escape(full_text))
+    esc_match = str(escape(match_text))
+    highlighted = esc_full.replace(
+        esc_match,
+        f'<mark class="bg-yellow-200 font-semibold rounded px-0.5">{esc_match}</mark>',
+        1,
+    )
+    return Markup(highlighted)
+
+
+def _extract_grammar_patterns(subtitles):
+    """Scan subtitle lines for grammar patterns; return list of pattern dicts."""
+    results = []
+    for pat in _GRAMMAR_PATTERNS:
+        examples = []
+        for sub in subtitles:
+            if len(examples) >= _MAX_EXAMPLES:
+                break
+            m = pat['regex'].search(sub.text)
+            if m:
+                examples.append(_make_highlighted(sub.text.strip(), m.group(0)))
+        results.append({
+            'label': pat['label'],
+            'description': pat['description'],
+            'icon': pat['icon'],
+            'badge': pat['badge'],
+            'examples': examples,
+        })
+    return results
 
 video_bp = Blueprint('video', __name__)
 
@@ -144,6 +251,25 @@ def listen(video_id):
     subtitles = Subtitle.query.filter_by(video_id=video.id).order_by(Subtitle.start_ms).all()
     real_subs = [s for s in subtitles if not s.text.startswith('[System:')]
     return render_template('video/listen.html', video=video, subtitles=real_subs)
+
+@video_bp.route('/<video_id>/grammar')
+@login_required
+def grammar(video_id):
+    """Grammar pattern analysis: scan subtitle lines and group by pattern type."""
+    video = Video.query.get_or_404(video_id)
+    subtitles = Subtitle.query.filter_by(video_id=video.id).order_by(Subtitle.start_ms).all()
+    real_subs = [s for s in subtitles if not s.text.startswith('[System:')]
+    patterns = _extract_grammar_patterns(real_subs)
+    found = [p for p in patterns if p['examples']]
+    total_examples = sum(len(p['examples']) for p in found)
+    return render_template(
+        'video/grammar.html',
+        video=video,
+        patterns=found,
+        total_examples=total_examples,
+        total_lines=len(real_subs),
+    )
+
 
 @video_bp.route('/<video_id>')
 @login_required

@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 15:30 - [Learning Mode] Grammar pattern extraction from video subtitles
+Added a dedicated Grammar Pattern Analysis page (`/video/<id>/grammar`) that scans a video's subtitle lines with regex and groups real in-context examples into six categories: Modal Verbs, Passive Voice, Conditional Sentences, Present Perfect, Comparatives & Superlatives, and Question Forms. Each example highlights the matched phrase in yellow using HTML-safe server-side rendering (`markupsafe`). A summary banner shows the number of pattern types found, total examples, and subtitle lines scanned. An empty state is shown for videos with too few subtitles. A green "📖 Grammar Patterns" button was added to the video detail page button row alongside the existing learning mode buttons.
+
 ## 2026-04-10 14:00 - [Learning Mode] Listening comprehension mode for videos
 Added a dedicated Listening Mode page (`/video/<id>/listen`) where subtitles are hidden by default so users practise understanding the spoken audio without text support. Users can toggle the full transcript on/off at any time via a "Reveal Subtitles" button (or the `S` keyboard shortcut), and the visible transcript syncs a highlighted active line to the playback position. After watching, a "Rate Understanding" panel lets users self-assess comprehension on a 1–5 emoji scale (Almost nothing → Fully understood), saving the session to their stats. Watch time is recorded every 30 s just like the main player. A teal "👂 Listening Mode" button was added first in the button row on every video detail page.
 

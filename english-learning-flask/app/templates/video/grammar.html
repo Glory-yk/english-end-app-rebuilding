@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+
+    <!-- Header -->
+    <div class="flex items-start gap-3 mb-6">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="mt-1 text-gray-400 hover:text-gray-600 transition text-xl leading-none shrink-0"
+           title="Back to video">&larr;</a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Grammar Pattern Analysis</h1>
+            <p class="text-gray-500 text-sm mt-0.5 truncate max-w-xl">{{ video.title }}</p>
+        </div>
+    </div>
+
+    <!-- Summary banner -->
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-8">
+        <div class="flex flex-wrap gap-8 items-center">
+            <div class="text-center">
+                <p class="text-3xl font-black text-indigo-600">{{ patterns|length }}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Pattern Types</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black text-indigo-600">{{ total_examples }}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Examples Found</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-black text-indigo-600">{{ total_lines }}</p>
+                <p class="text-xs text-gray-500 uppercase tracking-wide mt-1">Subtitle Lines</p>
+            </div>
+            <p class="text-sm text-indigo-700 ml-auto max-w-xs hidden sm:block">
+                Highlighted patterns come directly from this video's subtitles.
+                Notice them next time you watch!
+            </p>
+        </div>
+    </div>
+
+    {% if patterns %}
+    <!-- Pattern explanation -->
+    <p class="text-sm text-gray-500 mb-5">
+        Each section shows up to {{ 6 }} real examples pulled from the subtitles.
+        The <mark class="bg-yellow-200 font-semibold rounded px-0.5">highlighted words</mark>
+        are the grammar pattern itself.
+    </p>
+
+    <div class="space-y-6">
+        {% for pattern in patterns %}
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+            <!-- Pattern header -->
+            <div class="px-5 py-4 border-b border-gray-100 flex items-start gap-3 bg-gray-50">
+                <span class="text-2xl leading-none mt-0.5" aria-hidden="true">{{ pattern.icon }}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-bold text-gray-900">{{ pattern.label }}</h2>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ pattern.badge }}">
+                            {{ pattern.examples|length }}
+                            example{{ 's' if pattern.examples|length != 1 else '' }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-0.5">{{ pattern.description }}</p>
+                </div>
+            </div>
+
+            <!-- Examples list -->
+            <ul class="divide-y divide-gray-50" aria-label="{{ pattern.label }} examples">
+                {% for example in pattern.examples %}
+                <li class="px-5 py-3 text-gray-700 text-sm leading-relaxed hover:bg-gray-50 transition">
+                    {{ example }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Back button -->
+    <div class="mt-10 text-center">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full transition">
+            &larr; Back to Video
+        </a>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="bg-white rounded-xl shadow p-14 text-center">
+        <p class="text-5xl mb-4">🔍</p>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">No Patterns Detected</h2>
+        <p class="text-gray-500 max-w-sm mx-auto">
+            This video has very few subtitle lines, or the grammar patterns we look for
+            didn't appear. Try a video with more natural dialogue!
+        </p>
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="inline-block mt-6 bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition">
+            Back to Video
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
