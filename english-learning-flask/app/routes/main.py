@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, date as date_type
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from sqlalchemy import func, case
+from sqlalchemy.orm import joinedload
 from app.models.profile import Profile
 from app.models.progress import LearningSession, Quiz
 from app.models.vocabulary import UserVocabulary
@@ -46,7 +47,14 @@ main_bp = Blueprint('main', __name__)
 def index():
     if current_user.is_authenticated:
         profile = Profile.query.filter_by(user_id=current_user.id).first()
-        recent_sessions = LearningSession.query.filter_by(profile_id=profile.id).order_by(LearningSession.created_at.desc()).limit(5).all()
+        recent_sessions = (
+            LearningSession.query
+            .filter_by(profile_id=profile.id)
+            .options(joinedload(LearningSession.video))
+            .order_by(LearningSession.created_at.desc())
+            .limit(5)
+            .all()
+        )
 
         # Today's watched minutes
         today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -134,7 +142,10 @@ def stats():
 
     # Prepare data for charts
     labels = [(datetime.utcnow() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
-    activity_data = {row.date.strftime('%Y-%m-%d'): row.seconds for row in daily_stats}
+    activity_data = {
+        (row.date if isinstance(row.date, str) else row.date.strftime('%Y-%m-%d')): row.seconds
+        for row in daily_stats
+    }
     chart_values = [activity_data.get(label, 0) // 60 for label in labels] # minutes
 
     # 4. Difficulty Distribution

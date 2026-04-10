@@ -14,6 +14,8 @@ class LearningSession(db.Model):
     completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    video = db.relationship('Video', foreign_keys=[video_id])
+
 class Quiz(db.Model):
     __tablename__ = 'quizzes'
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

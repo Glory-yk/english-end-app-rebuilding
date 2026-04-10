@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-10 18:00 - [Bug Fix / Performance] Fix "Unknown Video" in dashboard + N+1 query + stats date crash
+Added `video = db.relationship('Video', foreign_keys=[video_id])` to `LearningSession` so the Recent Activity section on the dashboard correctly shows real video titles instead of always showing "Unknown Video". Added `joinedload(LearningSession.video)` to the recent-sessions query to load all 5 session videos in a single JOIN instead of 5 separate SELECT calls (eliminates N+1). Also fixed a `AttributeError` crash in the stats page where `func.date()` returns a plain string on SQLite — `row.date.strftime()` now guards with an `isinstance` check so both SQLite (string) and PostgreSQL (date object) are handled correctly.
+
 ## 2026-04-10 17:00 - [Performance] In-memory TTL cache for YouTube channel video fetching
 `YouTubeService.fetch_channel_videos` previously made a live HTTP request (RSS or page-scrape, 2–15 s) on every Kids-mode and Channel-view page load. Added a module-level dict cache with a 5-minute TTL so repeated page loads within the window return immediately without hitting YouTube. The existing fetch logic was extracted into `_fetch_channel_videos_live`; the public `fetch_channel_videos` now checks/stores the cache as a thin wrapper. No new dependencies required.
 
