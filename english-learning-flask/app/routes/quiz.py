@@ -18,7 +18,12 @@ def index():
     profile = Profile.query.filter_by(user_id=current_user.id).first()
     quizzes = Quiz.query.filter_by(profile_id=profile.id).all()
     word_count = UserVocabulary.query.filter_by(profile_id=profile.id).count()
-    return render_template('quiz/index.html', quizzes=quizzes, word_count=word_count)
+    hard_words_count = UserVocabulary.query.filter(
+        UserVocabulary.profile_id == profile.id,
+        UserVocabulary.repetitions > 0,
+    ).count()
+    return render_template('quiz/index.html', quizzes=quizzes, word_count=word_count,
+                           hard_words_count=hard_words_count)
 
 @quiz_bp.route('/generate/<video_id>', methods=['POST'])
 @login_required
@@ -377,4 +382,80 @@ def word_match():
         'quiz/word_match.html',
         pairs_json=json.dumps(pairs, ensure_ascii=False),
         total=len(pairs),
+    )
+
+
+@quiz_bp.route('/hard-words')
+@login_required
+def hard_words():
+    """Hard Words Drill: targeted MCQ quiz focused on the user's lowest ease-factor words."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    # Full pool needed for distractor options
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to use Hard Words Drill.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Hard words: reviewed at least once, sorted by ease_factor ASC (hardest first)
+    hard = (
+        UserVocabulary.query
+        .filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.repetitions > 0,
+        )
+        .join(UserVocabulary.vocabulary)
+        .order_by(UserVocabulary.ease_factor.asc())
+        .limit(10)
+        .all()
+    )
+
+    if len(hard) < 2:
+        flash(
+            "Not enough reviewed words yet. Complete some SRS reviews first — "
+            "then come back to drill your hardest words!",
+            'warning',
+        )
+        return redirect(url_for('quiz.index'))
+
+    all_meanings = [uw.vocabulary.meaning_ko for uw in all_words]
+
+    questions = []
+    for uw in hard:
+        correct = uw.vocabulary.meaning_ko
+        distractor_pool = [m for m in all_meanings if m != correct]
+        if len(distractor_pool) < 3:
+            continue
+        distractors = random.sample(distractor_pool, 3)
+        options = distractors + [correct]
+        random.shuffle(options)
+        # ease_factor range 1.3 (hardest) → 2.5 (easiest), map to 0–100 %
+        ease_pct = max(0, min(100, int((uw.ease_factor - 1.3) / (2.5 - 1.3) * 100)))
+        questions.append({
+            'word': uw.vocabulary.word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'correct': correct,
+            'options': options,
+            'ease_pct': ease_pct,
+            'repetitions': uw.repetitions,
+        })
+
+    if not questions:
+        flash("No hard words found. Keep reviewing to build your difficulty data!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    return render_template(
+        'quiz/hard_words.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
     )

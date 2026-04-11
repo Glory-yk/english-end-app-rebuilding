@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Quiz] Hard Words Drill — targeted quiz for struggling vocabulary
+Added an 8th quiz mode: Hard Words Drill (`/quiz/hard-words`). It queries the user's vocabulary sorted by SRS ease_factor ASC (lowest = hardest to remember) and runs a 4-option multiple-choice quiz exclusively on those words, showing each word's ease bar (Hard / Tricky / Shaky) and review count in the question header. A "🎯 Drill Hard Words" button was added to the "Words Needing Attention" panel on the Learning Analytics page so users can go directly from seeing their weakest spots to drilling them. A rose-gradient card showing the live count of reviewed words was added to the Quiz Hub grid. Results link back to SRS Review and Analytics. This closes the key feedback loop missing from the app: before, users could see their hard words but had no way to target them specifically in a quiz.
+
 ## 2026-04-11 - [UI/UX] "Watch Next" recommendations panel on video detail page
 Added a "Watch Next" section at the bottom of every video detail page that surfaces up to 3 similar-difficulty videos to watch next. Cards show the YouTube thumbnail (with duration badge), difficulty pill, title, channel name, and a "✓ Watched" indigo badge for previously watched videos; hovering reveals a "▶ Watch" overlay and highlights the title in blue. The backend query prefers same-difficulty videos and falls back to any other video in the library if fewer than 3 are available; a single extra query checks which suggested videos the user has already seen. A "Browse all videos →" link below the grid sends users to the full library. This is the core engagement loop missing from the app — it eliminates the blank dead-end after finishing a video and keeps users in a learning session.
 

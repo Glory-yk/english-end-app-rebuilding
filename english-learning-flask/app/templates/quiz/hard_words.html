@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-2xl" aria-hidden="true">🎯</span>
+                    <h1 class="text-3xl font-bold">Hard Words Drill</h1>
+                </div>
+                <p class="text-gray-500 text-sm">These are YOUR toughest words — drilling them breaks the forgetting cycle.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+            <div id="progress-bar" class="bg-rose-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="progress-label" class="text-right text-xs text-gray-400 -mt-4 mb-6">
+            Question <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8 min-h-[380px] flex flex-col justify-between">
+
+            <!-- Difficulty indicator -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>Retention ease</span>
+                    <span id="ease-label" class="font-semibold"></span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div id="ease-bar" class="h-full rounded-full transition-all duration-500"></div>
+                </div>
+            </div>
+
+            <!-- Word display -->
+            <div class="text-center mb-6">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">What does this word mean?</p>
+                <h2 id="q-word" class="text-5xl font-black text-rose-600"></h2>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span id="q-phonetic" class="text-gray-400 italic text-sm"></span>
+                    <span id="q-pos" class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+                </div>
+                <div class="flex items-center justify-center gap-3 mt-2">
+                    <button onclick="speakWord()" title="Pronounce"
+                            class="text-rose-400 hover:text-rose-600 text-2xl transition"
+                            aria-label="Pronounce word">&#128266;</button>
+                    <span id="q-reps" class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"></span>
+                </div>
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <!-- Feedback bar -->
+            <div id="feedback" class="hidden text-center mt-4 py-3 rounded-xl font-bold text-lg"></div>
+
+            <!-- Next button -->
+            <div class="text-center mt-6">
+                <button id="next-btn" onclick="nextQuestion()"
+                        class="hidden bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-8 rounded-full transition">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-2"></h2>
+            <p id="result-sub" class="text-gray-500 mb-6"></p>
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <span class="text-5xl font-black text-rose-600" id="result-score"></span>
+                <span class="text-gray-400 text-lg">/ {{ total }}</span>
+            </div>
+            <p class="text-sm text-gray-500 mb-8">
+                Each correct answer here tells the SRS engine these words are getting easier — keep it up!
+            </p>
+
+            <!-- Missed words review -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Still need work:</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.hard_words') }}"
+                   class="bg-rose-600 text-white font-bold py-3 px-8 rounded-full hover:bg-rose-700 transition">
+                    Drill Again 🎯
+                </a>
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition">
+                    SRS Review →
+                </a>
+                <a href="{{ url_for('main.stats') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    View Analytics
+                </a>
+            </div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1–4</kbd> choose &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> next &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> replay
+        </p>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = {{ questions_json|safe }};
+let current = 0;
+let score = 0;
+let answered = false;
+const missed = [];
+
+function speakWord() {
+    const word = QUESTIONS[current]?.word;
+    if (!word || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+function renderQuestion() {
+    const q = QUESTIONS[current];
+    answered = false;
+
+    document.getElementById('q-word').textContent = q.word;
+
+    const phonEl = document.getElementById('q-phonetic');
+    phonEl.textContent = q.phonetic || '';
+
+    const posEl = document.getElementById('q-pos');
+    if (q.pos) {
+        posEl.textContent = q.pos;
+        posEl.classList.remove('hidden');
+    } else {
+        posEl.classList.add('hidden');
+    }
+
+    const repsEl = document.getElementById('q-reps');
+    repsEl.textContent = q.repetitions + '× reviewed';
+
+    // Ease bar
+    const easePct = q.ease_pct;
+    const easeBar = document.getElementById('ease-bar');
+    const easeLabel = document.getElementById('ease-label');
+    let barColor, labelText;
+    if (easePct < 30) {
+        barColor = 'bg-rose-500'; labelText = 'Hard';
+    } else if (easePct < 60) {
+        barColor = 'bg-amber-400'; labelText = 'Tricky';
+    } else {
+        barColor = 'bg-yellow-300'; labelText = 'Shaky';
+    }
+    easeBar.className = 'h-full rounded-full transition-all duration-500 ' + barColor;
+    easeBar.style.width = Math.max(easePct, 4) + '%';
+    easeLabel.textContent = labelText + ' (' + easePct + '%)';
+
+    document.getElementById('q-num').textContent = current + 1;
+    const pct = (current / QUESTIONS.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn py-4 px-5 rounded-xl border-2 border-gray-200 text-gray-800 text-sm font-semibold text-left hover:border-rose-400 hover:bg-rose-50 transition-all';
+        btn.dataset.idx = idx;
+        btn.innerHTML = `<span class="text-gray-400 font-mono mr-2">${idx + 1}</span>${opt}`;
+        btn.onclick = () => chooseOption(idx);
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+
+    // Auto-pronounce
+    setTimeout(() => speakWord(), 300);
+}
+
+function chooseOption(chosenIdx) {
+    if (answered) return;
+    answered = true;
+
+    const q = QUESTIONS[current];
+    const isCorrect = q.options[chosenIdx] === q.correct;
+    if (isCorrect) score++;
+    else missed.push({ word: q.word, correct: q.correct, chosen: q.options[chosenIdx] });
+
+    document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+        btn.disabled = true;
+        const opt = q.options[idx];
+        if (opt === q.correct) {
+            btn.className = btn.className.replace('border-gray-200', 'border-green-500') + ' bg-green-50 text-green-800';
+        } else if (idx === chosenIdx && !isCorrect) {
+            btn.className = btn.className.replace('border-gray-200', 'border-red-400') + ' bg-red-50 text-red-800 line-through';
+        }
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct! One step closer to mastery.';
+    } else {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-red-100 text-red-700';
+        fb.textContent = `✗ The answer was: ${q.correct}`;
+    }
+
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= QUESTIONS.length) {
+        showResults();
+    } else {
+        renderQuestion();
+    }
+}
+
+function saveQuizResult(type, icon, s, total) {
+    try {
+        const MAX = 10, KEY = 'englearn_quiz_history';
+        const hist = JSON.parse(localStorage.getItem(KEY) || '[]');
+        hist.unshift({ type, icon, score: s, total, pct: Math.round(s / total * 100), ts: Date.now() });
+        if (hist.length > MAX) hist.splice(MAX);
+        localStorage.setItem(KEY, JSON.stringify(hist));
+    } catch (e) {}
+}
+
+function showResults() {
+    saveQuizResult('Hard Words Drill', '🎯', score, QUESTIONS.length);
+    document.getElementById('quiz-card').classList.add('hidden');
+    document.getElementById('progress-bar').style.width = '100%';
+
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+    document.getElementById('result-score').textContent = score;
+
+    const pct = Math.round((score / QUESTIONS.length) * 100);
+    let emoji, heading, sub;
+    if (pct === 100) {
+        emoji = '🏆'; heading = 'Flawless Drill!';
+        sub = 'You aced every hard word — your SRS ease scores will climb!';
+    } else if (pct >= 70) {
+        emoji = '💪'; heading = 'Strong Effort!';
+        sub = 'Most of your hard words are cracking open. Keep drilling!';
+    } else if (pct >= 40) {
+        emoji = '📖'; heading = 'Keep At It!';
+        sub = 'These words resist — that\'s exactly why you need to drill them.';
+    } else {
+        emoji = '🔁'; heading = 'Time to Repeat!';
+        sub = 'Run this drill again after your next SRS review session.';
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    if (missed.length > 0) {
+        const sec = document.getElementById('missed-section');
+        sec.classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(m => {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm';
+            li.innerHTML = `<span class="font-bold text-red-700">${m.word}</span> → <span class="text-gray-700">${m.correct}</span>`;
+            list.appendChild(li);
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const keyMap = { 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3 };
+    if (e.code in keyMap && !answered) {
+        e.preventDefault();
+        const btns = document.querySelectorAll('.option-btn');
+        const btn = btns[keyMap[e.code]];
+        if (btn) btn.click();
+    }
+    if (e.code === 'Enter' && answered) {
+        e.preventDefault();
+        document.getElementById('next-btn').click();
+    }
+    if (e.code === 'KeyR') {
+        e.preventDefault();
+        speakWord();
+    }
+});
+
+// Start
+renderQuestion();
+</script>
+{% endblock %}

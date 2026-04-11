@@ -163,10 +163,16 @@
                 <h3 class="font-bold text-lg">Words Needing Attention</h3>
                 <p class="text-sm text-gray-500 mt-0.5">Words you've found hardest to remember — ease bar shows retention strength.</p>
             </div>
-            <a href="{{ url_for('vocab.review') }}"
-               class="shrink-0 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100 hover:bg-rose-100 transition-colors self-start sm:self-auto">
-                Start Review →
-            </a>
+            <div class="flex flex-wrap gap-2 self-start sm:self-auto">
+                <a href="{{ url_for('quiz.hard_words') }}"
+                   class="shrink-0 text-sm font-bold text-white bg-rose-500 px-3 py-1 rounded-full hover:bg-rose-600 transition-colors">
+                    🎯 Drill Hard Words
+                </a>
+                <a href="{{ url_for('vocab.review') }}"
+                   class="shrink-0 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100 hover:bg-rose-100 transition-colors">
+                    Start Review →
+                </a>
+            </div>
         </div>
         {% if struggling_words %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
