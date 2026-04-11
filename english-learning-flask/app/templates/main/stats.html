@@ -48,6 +48,59 @@
     .streak-flame { display: inline-block; animation: flicker 0.9s ease-in-out infinite; }
 </style>
 
+    <!-- 30-Day Activity Heatmap -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">30-Day Activity Heatmap</h3>
+                <p class="text-sm text-gray-500 mt-0.5">
+                    <span class="font-semibold text-gray-700">{{ active_days }}</span> active day{{ 's' if active_days != 1 }} in the last 30
+                    {% if best_day_mins %}&mdash; best day <span class="font-semibold text-green-600">{{ best_day_mins }} min</span>{% endif %}
+                </p>
+            </div>
+            <!-- Legend -->
+            <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
+                <span>Less</span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-gray-100 border border-gray-200 inline-block" title="No study"></span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-green-200 inline-block" title="< 15 min"></span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-green-400 inline-block" title="15–29 min"></span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-green-500 inline-block" title="30–59 min"></span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-green-700 inline-block" title="60+ min"></span>
+                <span>More</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <div class="inline-block">
+                <!-- Day-of-week header: M T W T F S S -->
+                <div class="grid gap-1 mb-1" style="grid-template-columns: repeat(7, 1.25rem)">
+                    {% for d in ['M','T','W','T','F','S','S'] %}
+                    <div class="w-5 text-center text-xs text-gray-400 leading-none select-none">{{ d }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Heatmap cells: one cell per day, aligned to weekday columns -->
+                <div class="grid gap-1" style="grid-template-columns: repeat(7, 1.25rem)">
+                    {# Leading blank cells so day[0] lands on the right weekday column #}
+                    {% for _ in range(heatmap_offset) %}
+                    <div class="w-5 h-5"></div>
+                    {% endfor %}
+
+                    {% set cell_bg = ['bg-gray-100 border border-gray-200', 'bg-green-200', 'bg-green-400', 'bg-green-500', 'bg-green-700'] %}
+                    {% for day in heatmap_days %}
+                    <div class="w-5 h-5 rounded-sm {{ cell_bg[day.level] }}{% if day.is_today %} ring-2 ring-offset-1 ring-blue-400{% endif %} cursor-default"
+                         title="{{ day.label }}: {{ day.minutes }} min{% if day.minutes == 0 %} (no study){% endif %}"></div>
+                    {% endfor %}
+                </div>
+
+                <!-- Date range label -->
+                <p class="text-xs text-gray-400 mt-2">
+                    {{ heatmap_days[0].label }} &mdash; {{ heatmap_days[-1].label }}
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Learning Activity Chart -->
         <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">

@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Analytics] 30-Day Learning Activity Heatmap on Stats Page
+Added a GitHub-style contribution heatmap to the Learning Analytics page showing the last 30 days of study activity. Each day is represented as a colour-coded cell (5 intensity levels: none → <15 min → 15–29 min → 30–59 min → 60+ min) arranged in a weekday-aligned grid. A header shows the active-day count and best-day minutes; a colour legend explains the intensity scale; tooltip titles reveal the exact date and minutes per cell; and today is highlighted with a blue ring. The backend adds a single efficient `SUM(watched_sec) GROUP BY date` query over the last 30 days in the `/stats` route — no schema changes required.
+
 ## 2026-04-11 - [Quiz] Spelling Bee — type the English word from its Korean meaning
 Added a 4th quiz mode to the Quiz Hub: Spelling Bee (`/quiz/spelling-bee`). The server samples up to 10 words from the user's personal wordbook and for each one shows its Korean meaning, POS badge, phonetic, a first-letter hint, and the word length. The user types the full English spelling in a free-text input (no multiple-choice safety net). Correct answers auto-pronounce via Web Speech API; wrong/skipped answers reveal the correct word and example sentence. Keyboard shortcuts (Enter=check, Tab=skip, →/Enter=next, R=pronounce), a running score counter, a missed-words review list on the results screen, and localStorage score history integration complete the feature. A pink/rose gradient card was added as the 4th card on the Quiz Hub index.
 

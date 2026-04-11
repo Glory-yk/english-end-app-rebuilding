@@ -159,6 +159,43 @@ def stats():
 
     streak_days = _calculate_streak(profile.id)
 
+    # 5. 30-Day Activity Heatmap
+    thirty_days_start = (datetime.utcnow() - timedelta(days=29)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    heatmap_stats = db.session.query(
+        func.date(LearningSession.created_at).label('date'),
+        func.sum(LearningSession.watched_sec).label('seconds'),
+    ).filter(
+        LearningSession.profile_id == profile.id,
+        LearningSession.created_at >= thirty_days_start
+    ).group_by(func.date(LearningSession.created_at)).all()
+
+    raw_heatmap = {}
+    for row in heatmap_stats:
+        d = row.date if isinstance(row.date, str) else row.date.strftime('%Y-%m-%d')
+        raw_heatmap[d] = (row.seconds or 0) // 60  # seconds → minutes
+
+    today_dt = datetime.utcnow().date()
+    heatmap_days = []
+    for i in range(29, -1, -1):
+        day = today_dt - timedelta(days=i)
+        day_str = day.strftime('%Y-%m-%d')
+        mins = raw_heatmap.get(day_str, 0)
+        level = 0 if mins == 0 else (1 if mins < 15 else (2 if mins < 30 else (3 if mins < 60 else 4)))
+        heatmap_days.append({
+            'date': day_str,
+            'label': day.strftime('%b ') + str(day.day),
+            'minutes': mins,
+            'level': level,
+            'is_today': (day == today_dt),
+        })
+
+    # Number of leading blank cells to align the first day to its weekday column (0=Mon)
+    heatmap_offset = (today_dt - timedelta(days=29)).weekday()
+    active_days = sum(1 for d in heatmap_days if d['minutes'] > 0)
+    best_day_mins = max((d['minutes'] for d in heatmap_days), default=0)
+
     return render_template('main/stats.html',
                          profile=profile,
                          total_hours=round(total_watched_sec / 3600, 1),
@@ -168,4 +205,8 @@ def stats():
                          labels=labels,
                          chart_values=chart_values,
                          diff_dist=diff_dist,
-                         streak_days=streak_days)
+                         streak_days=streak_days,
+                         heatmap_days=heatmap_days,
+                         heatmap_offset=heatmap_offset,
+                         active_days=active_days,
+                         best_day_mins=best_day_mins)
