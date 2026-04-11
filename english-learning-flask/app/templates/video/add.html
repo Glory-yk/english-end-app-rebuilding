@@ -7,25 +7,28 @@
             <h1 class="text-2xl font-bold text-white">Add New Learning Video</h1>
             <p class="text-blue-100 mt-1">Paste a YouTube URL to start learning from subtitles.</p>
         </div>
-        
-        <form method="POST" class="p-8">
+
+        <form method="POST" id="add-video-form" class="p-8" novalidate>
             <div class="mb-6">
                 <label for="url" class="block text-sm font-bold text-gray-700 mb-2">YouTube Video URL</label>
                 <input type="url" name="url" id="url" required
                        placeholder="https://www.youtube.com/watch?v=..."
-                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
-                <p class="text-xs text-gray-500 mt-2">Example: https://www.youtube.com/watch?v=aqz-KE-BPKQ</p>
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                       aria-describedby="url-hint">
+                <p id="url-hint" class="text-xs text-gray-500 mt-2">Example: https://www.youtube.com/watch?v=aqz-KE-BPKQ</p>
+                <p id="url-error" class="text-xs text-red-600 mt-1 hidden" role="alert">Please enter a valid YouTube URL.</p>
             </div>
 
             <div class="flex flex-col items-center gap-4">
                 <div class="flex items-center justify-between w-full gap-4">
                     <a href="{{ url_for('video.index') }}" class="text-gray-500 hover:text-gray-700 font-medium">Cancel</a>
-                    <button type="submit" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform active:scale-95 transition">
-                        Fetch Video & Subtitles
+                    <button type="submit" id="submit-btn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform active:scale-95 transition flex items-center gap-2">
+                        <span id="btn-icon">📥</span>
+                        <span id="btn-text">Fetch Video &amp; Subtitles</span>
                     </button>
                 </div>
-                
+
                 <div class="mt-6 border-t pt-6 w-full text-center">
                     <p class="text-sm text-gray-500 mb-2">Trouble with YouTube API?</p>
                     <a href="{{ url_for('video.add_sample') }}" class="text-blue-600 font-bold hover:underline">
@@ -54,4 +57,144 @@
         </div>
     </div>
 </div>
+
+<!-- Loading overlay — shown while the server processes the video -->
+<div id="loading-overlay"
+     class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-80 flex items-center justify-center"
+     role="status" aria-live="polite" aria-label="Processing video">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+
+        <!-- Animated rings -->
+        <div class="relative w-24 h-24 mx-auto mb-6">
+            <div class="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+            <div class="absolute inset-2 rounded-full border-4 border-blue-200 border-b-transparent animate-spin" style="animation-duration:1.5s;animation-direction:reverse"></div>
+            <span class="absolute inset-0 flex items-center justify-center text-3xl" aria-hidden="true">🎬</span>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Preparing Your Lesson</h2>
+        <p id="loading-step" class="text-blue-600 font-medium text-sm mb-4">Connecting to YouTube…</p>
+
+        <!-- Step progress bar -->
+        <div class="w-full bg-gray-100 rounded-full h-2 mb-4 overflow-hidden">
+            <div id="loading-bar"
+                 class="h-2 bg-blue-500 rounded-full transition-all duration-700 ease-out"
+                 style="width:8%"></div>
+        </div>
+
+        <!-- Animated step dots -->
+        <div class="flex justify-center gap-2 mb-4" aria-hidden="true">
+            <span id="dot-0" class="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span id="dot-1" class="w-2 h-2 rounded-full bg-gray-200"></span>
+            <span id="dot-2" class="w-2 h-2 rounded-full bg-gray-200"></span>
+            <span id="dot-3" class="w-2 h-2 rounded-full bg-gray-200"></span>
+            <span id="dot-4" class="w-2 h-2 rounded-full bg-gray-200"></span>
+        </div>
+
+        <p class="text-xs text-gray-400">This usually takes 5–15 seconds. Please don't close this tab.</p>
+    </div>
+</div>
+
+<script>
+(function () {
+    const STEPS = [
+        { label: 'Connecting to YouTube…',           pct: 8  },
+        { label: 'Fetching video metadata…',          pct: 25 },
+        { label: 'Downloading English subtitles…',    pct: 48 },
+        { label: 'Restoring punctuation & casing…',   pct: 68 },
+        { label: 'Indexing subtitle words…',          pct: 85 },
+        { label: 'Almost ready — finishing up…',      pct: 96 },
+    ];
+
+    const form      = document.getElementById('add-video-form');
+    const urlInput  = document.getElementById('url');
+    const urlError  = document.getElementById('url-error');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText   = document.getElementById('btn-text');
+    const btnIcon   = document.getElementById('btn-icon');
+    const overlay   = document.getElementById('loading-overlay');
+    const stepLabel = document.getElementById('loading-step');
+    const bar       = document.getElementById('loading-bar');
+    const dots      = Array.from({ length: 5 }, (_, i) => document.getElementById('dot-' + i));
+
+    let stepIdx = 0;
+    let stepTimer = null;
+
+    function advanceStep() {
+        if (stepIdx >= STEPS.length) return;
+        const s = STEPS[stepIdx];
+        stepLabel.textContent = s.label;
+        bar.style.width = s.pct + '%';
+
+        // Colour the appropriate dot
+        const dotTarget = Math.min(Math.floor(stepIdx * dots.length / STEPS.length), dots.length - 1);
+        dots.forEach((d, i) => {
+            d.classList.toggle('bg-blue-500', i <= dotTarget);
+            d.classList.toggle('bg-gray-200', i > dotTarget);
+        });
+
+        stepIdx++;
+        if (stepIdx < STEPS.length) {
+            // Steps slow down toward the end to reflect real processing time
+            const delays = [1200, 2000, 2500, 2500, 3000];
+            stepTimer = setTimeout(advanceStep, delays[stepIdx - 1] || 2500);
+        }
+    }
+
+    function showLoading() {
+        // Disable button & show spinner in it
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        btnIcon.textContent = '⏳';
+        btnText.textContent = 'Processing…';
+
+        // Show full-page overlay
+        overlay.classList.remove('hidden');
+
+        // Start step progression
+        stepIdx = 0;
+        advanceStep();
+    }
+
+    function isYouTubeUrl(val) {
+        return /youtube\.com\/watch|youtu\.be\//.test(val);
+    }
+
+    form.addEventListener('submit', function (e) {
+        const val = urlInput.value.trim();
+
+        // Basic client-side validation
+        if (!val || !isYouTubeUrl(val)) {
+            e.preventDefault();
+            urlError.classList.remove('hidden');
+            urlInput.focus();
+            urlInput.classList.add('border-red-400', 'ring-1', 'ring-red-400');
+            return;
+        }
+
+        urlError.classList.add('hidden');
+        urlInput.classList.remove('border-red-400', 'ring-1', 'ring-red-400');
+        showLoading();
+        // Let the form submit naturally (no e.preventDefault())
+    });
+
+    // Clear error styling on input
+    urlInput.addEventListener('input', function () {
+        urlError.classList.add('hidden');
+        urlInput.classList.remove('border-red-400', 'ring-1', 'ring-red-400');
+    });
+
+    // If page is restored from bfcache (browser back button), reset the overlay
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            overlay.classList.add('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            btnIcon.textContent = '📥';
+            btnText.textContent = 'Fetch Video & Subtitles';
+            if (stepTimer) clearTimeout(stepTimer);
+        }
+    });
+}());
+</script>
 {% endblock %}
