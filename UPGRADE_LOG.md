@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [UI/UX] "Watch Next" recommendations panel on video detail page
+Added a "Watch Next" section at the bottom of every video detail page that surfaces up to 3 similar-difficulty videos to watch next. Cards show the YouTube thumbnail (with duration badge), difficulty pill, title, channel name, and a "✓ Watched" indigo badge for previously watched videos; hovering reveals a "▶ Watch" overlay and highlights the title in blue. The backend query prefers same-difficulty videos and falls back to any other video in the library if fewer than 3 are available; a single extra query checks which suggested videos the user has already seen. A "Browse all videos →" link below the grid sends users to the full library. This is the core engagement loop missing from the app — it eliminates the blank dead-end after finishing a video and keeps users in a learning session.
+
 ## 2026-04-11 - [UI/UX] "Continue Learning" hero card on dashboard
 Added a "Continue Learning" card to the dashboard that surfaces the user's most recently watched video with its YouTube thumbnail, title, channel name, difficulty badge, "last watched" date, minutes watched, and an inline progress bar (percentage of total duration completed). The entire card is a clickable link to the video detail page with hover effects; a "▶ Resume" overlay badge on the thumbnail and a "Continue Watching →" CTA button reinforce the action. This is the single highest-retention UX feature in any content-learning app — it eliminates the friction of deciding what to watch next. The `sessions` list with `joinedload(LearningSession.video)` was already passed to the template, so zero backend changes were needed.
 

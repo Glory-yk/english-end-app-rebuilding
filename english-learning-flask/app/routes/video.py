@@ -329,10 +329,45 @@ def detail(video_id):
             .all()
         )
 
+    # "Watch Next" — up to 3 same-difficulty videos, falling back to any other video
+    similar_videos = (
+        Video.query
+        .filter(Video.id != video.id)
+        .filter(Video.difficulty == video.difficulty)
+        .order_by(Video.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    if len(similar_videos) < 3:
+        already_ids = {v.id for v in similar_videos} | {video.id}
+        extras = (
+            Video.query
+            .filter(~Video.id.in_(already_ids))
+            .order_by(Video.created_at.desc())
+            .limit(3 - len(similar_videos))
+            .all()
+        )
+        similar_videos.extend(extras)
+
+    watched_next_ids: set = set()
+    if profile and similar_videos:
+        watched_next_ids = {
+            row[0] for row in
+            db.session.query(LearningSession.video_id)
+                .filter(
+                    LearningSession.profile_id == profile.id,
+                    LearningSession.video_id.in_([v.id for v in similar_videos])
+                )
+                .distinct()
+                .all()
+        }
+
     return render_template(
         'video/detail.html',
         video=video,
         subtitles=subtitles,
         saved_words_json=saved_words_json,
         video_saved_words=video_saved_words,
+        similar_videos=similar_videos,
+        watched_next_ids=watched_next_ids,
     )
