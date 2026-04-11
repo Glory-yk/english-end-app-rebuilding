@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">🌅 Daily Challenge</span>
+                    <span id="date-badge" class="bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full"></span>
+                </div>
+                <h1 class="text-3xl font-bold leading-tight">Today's Challenge</h1>
+                <p class="text-gray-500 text-sm mt-1">{{ total }} questions — same set all day, new challenge tomorrow.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div id="progress-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="progress-label" class="text-right text-xs text-gray-400 mb-6">
+            Question <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8 min-h-[340px] flex flex-col justify-between">
+
+            <!-- Word display -->
+            <div class="text-center mb-6">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">What does this word mean?</p>
+                <h2 id="q-word" class="text-5xl font-black text-amber-600"></h2>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span id="q-phonetic" class="text-gray-400 italic text-sm"></span>
+                    <span id="q-pos" class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+                </div>
+                <button onclick="speakWord()" title="Pronounce"
+                        class="mt-3 text-amber-400 hover:text-amber-600 text-2xl transition"
+                        aria-label="Pronounce word">&#128266;</button>
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <!-- Feedback -->
+            <div id="feedback" class="hidden text-center mt-4 py-3 rounded-xl font-bold text-lg"></div>
+
+            <!-- Next button -->
+            <div class="text-center mt-6">
+                <button id="next-btn" onclick="nextQuestion()"
+                        class="hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-8 rounded-full transition">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-trophy" class="text-6xl mb-2"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-1"></h2>
+            <p id="result-sub" class="text-gray-500 mb-4"></p>
+
+            <!-- Score ring -->
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <span class="text-6xl font-black text-amber-500" id="result-score"></span>
+                <span class="text-gray-400 text-2xl">/ {{ total }}</span>
+            </div>
+
+            <!-- Completion badge -->
+            <div id="pass-badge" class="hidden inline-flex items-center gap-2 bg-green-100 text-green-700 font-bold text-sm px-4 py-2 rounded-full mb-6">
+                🏅 Daily Challenge Complete!
+            </div>
+            <div id="fail-nudge" class="hidden inline-flex items-center gap-2 bg-amber-50 text-amber-700 font-semibold text-sm px-4 py-2 rounded-full mb-6">
+                📅 Try again tomorrow for a fresh set!
+            </div>
+
+            <!-- Missed words -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Words to revisit:</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition">
+                    SRS Review →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Quiz Hub
+                </a>
+            </div>
+            <p class="text-xs text-gray-400 mt-6">Come back tomorrow for a new Daily Challenge!</p>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1–4</kbd> choose &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> next &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> pronounce
+        </p>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = {{ questions_json|safe }};
+const TODAY_STR = {{ today_str|tojson }};
+const DC_KEY = 'englearn_daily_' + TODAY_STR;
+let current = 0, score = 0, answered = false;
+const missed = [];
+
+// Show today's date in the badge
+(function() {
+    const d = new Date(TODAY_STR + 'T00:00:00');
+    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const el = document.getElementById('date-badge');
+    if (el) el.textContent = label;
+})();
+
+function speakWord() {
+    const word = QUESTIONS[current]?.word;
+    if (!word || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US'; u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+function renderQuestion() {
+    const q = QUESTIONS[current];
+    answered = false;
+
+    document.getElementById('q-word').textContent = q.word;
+    const phonEl = document.getElementById('q-phonetic');
+    phonEl.textContent = q.phonetic || '';
+
+    const posEl = document.getElementById('q-pos');
+    if (q.pos) { posEl.textContent = q.pos; posEl.classList.remove('hidden'); }
+    else { posEl.classList.add('hidden'); }
+
+    document.getElementById('q-num').textContent = current + 1;
+    document.getElementById('progress-bar').style.width = (current / QUESTIONS.length * 100) + '%';
+
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn py-4 px-5 rounded-xl border-2 border-gray-200 text-gray-800 text-sm font-semibold text-left hover:border-amber-400 hover:bg-amber-50 transition-all';
+        btn.innerHTML = `<span class="text-gray-400 font-mono mr-2">${idx + 1}</span>${opt}`;
+        btn.onclick = () => chooseOption(idx);
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+    setTimeout(() => speakWord(), 300);
+}
+
+function chooseOption(chosenIdx) {
+    if (answered) return;
+    answered = true;
+    const q = QUESTIONS[current];
+    const isCorrect = q.options[chosenIdx] === q.correct;
+    if (isCorrect) score++;
+    else missed.push({ word: q.word, correct: q.correct });
+
+    document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+        btn.disabled = true;
+        if (q.options[idx] === q.correct) {
+            btn.className = btn.className.replace('border-gray-200', 'border-green-500') + ' bg-green-50 text-green-800';
+        } else if (idx === chosenIdx && !isCorrect) {
+            btn.className = btn.className.replace('border-gray-200', 'border-red-400') + ' bg-red-50 text-red-800 line-through';
+        }
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct!';
+    } else {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-red-100 text-red-700';
+        fb.textContent = `✗ The answer was: ${q.correct}`;
+    }
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= QUESTIONS.length) showResults();
+    else renderQuestion();
+}
+
+function showResults() {
+    // Persist completion in localStorage (keyed by date so tomorrow's is fresh)
+    try {
+        localStorage.setItem(DC_KEY, JSON.stringify({ score, total: QUESTIONS.length, ts: Date.now() }));
+        // Also save to shared quiz history strip
+        const MAX = 10, HIST_KEY = 'englearn_quiz_history';
+        const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+        hist.unshift({ type: 'Daily Challenge', icon: '🌅', score, total: QUESTIONS.length,
+                       pct: Math.round(score / QUESTIONS.length * 100), ts: Date.now() });
+        if (hist.length > MAX) hist.splice(MAX);
+        localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    } catch (e) {}
+
+    document.getElementById('quiz-card').classList.add('hidden');
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+
+    document.getElementById('result-score').textContent = score;
+    document.getElementById('progress-bar').style.width = '100%';
+
+    const pct = Math.round(score / QUESTIONS.length * 100);
+    const passed = pct >= 70;
+
+    let trophy, heading, sub;
+    if (pct === 100) { trophy = '🏆'; heading = 'Perfect Challenge!'; sub = 'You aced every question today!'; }
+    else if (pct >= 80) { trophy = '🎉'; heading = 'Excellent!'; sub = 'Outstanding result on today\'s challenge.'; }
+    else if (pct >= 70) { trophy = '✅'; heading = 'Challenge Passed!'; sub = 'You cleared today\'s bar — well done.'; }
+    else if (pct >= 50) { trophy = '💪'; heading = 'Good Effort!'; sub = 'Keep reviewing — you\'ll crack it tomorrow.'; }
+    else { trophy = '📖'; heading = 'Keep Studying!'; sub = 'Review these words and try again tomorrow.'; }
+
+    document.getElementById('result-trophy').textContent = trophy;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    document.getElementById(passed ? 'pass-badge' : 'fail-nudge').classList.remove('hidden');
+
+    if (missed.length > 0) {
+        document.getElementById('missed-section').classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(m => {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm';
+            li.innerHTML = `<span class="font-bold text-red-700">${m.word}</span> → <span class="text-gray-700">${m.correct}</span>`;
+            list.appendChild(li);
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const keyMap = { 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3 };
+    if (e.code in keyMap && !answered) { e.preventDefault(); const btns = document.querySelectorAll('.option-btn'); if (btns[keyMap[e.code]]) btns[keyMap[e.code]].click(); }
+    if (e.code === 'Enter' && answered) { e.preventDefault(); document.getElementById('next-btn').click(); }
+    if (e.code === 'KeyR') { e.preventDefault(); speakWord(); }
+});
+
+renderQuestion();
+</script>
+{% endblock %}

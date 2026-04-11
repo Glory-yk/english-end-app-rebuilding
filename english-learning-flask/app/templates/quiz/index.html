@@ -14,6 +14,52 @@
         </form>
     </div>
 
+    <!-- Daily Challenge (featured full-row card) -->
+    <div class="mb-8">
+        <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">Today's Challenge</h2>
+        <div id="dc-card"
+             class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl shadow-xl p-7 text-white flex flex-col md:flex-row md:items-center gap-6">
+            <!-- Left: info -->
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-3xl" aria-hidden="true">🌅</span>
+                    <h3 class="text-xl font-black">Daily Challenge</h3>
+                    <span id="dc-done-badge"
+                          class="hidden bg-white bg-opacity-30 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                        ✓ Done today
+                    </span>
+                </div>
+                <p class="text-amber-100 text-sm mb-4">
+                    10 questions, seeded fresh every day — the <strong class="text-white">same set all day</strong>
+                    so every attempt counts. Complete it with ≥7/10 to earn the daily badge.
+                    New challenge unlocks at midnight!
+                </p>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">10 questions</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Daily seed</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Pass badge at 7/10</span>
+                    <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Keyboard shortcuts</span>
+                </div>
+            </div>
+            <!-- Right: CTA -->
+            <div class="shrink-0 flex flex-col items-center gap-2 min-w-[160px]">
+                {% if word_count >= 4 %}
+                <a id="dc-start-btn" href="{{ url_for('quiz.daily_challenge') }}"
+                   class="block text-center bg-white text-orange-600 font-black py-3 px-8 rounded-full hover:bg-orange-50 transition shadow-lg text-lg w-full text-center">
+                    Start →
+                </a>
+                <p id="dc-score-line" class="text-xs text-amber-200 hidden"></p>
+                {% else %}
+                <p class="text-amber-100 text-xs mb-2 text-center">Need at least 4 words in your wordbook</p>
+                <a href="{{ url_for('vocab.index') }}"
+                   class="inline-block bg-white text-orange-600 font-bold py-2 px-5 rounded-full hover:bg-orange-50 transition text-sm">
+                    Add Words →
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- Quiz cards -->
     <div class="mb-10">
         <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">Ready to Play</h2>
@@ -330,6 +376,25 @@
     {% endif %}
 </div>
 <script>
+// Daily Challenge completion check
+(function () {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const raw = localStorage.getItem('englearn_daily_' + today);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const badge = document.getElementById('dc-done-badge');
+        const scoreLine = document.getElementById('dc-score-line');
+        const startBtn = document.getElementById('dc-start-btn');
+        if (badge) badge.classList.remove('hidden');
+        if (scoreLine) {
+            scoreLine.textContent = '🏅 Score: ' + data.score + '/' + data.total;
+            scoreLine.classList.remove('hidden');
+        }
+        if (startBtn) startBtn.textContent = 'Play Again →';
+    } catch (e) {}
+})();
+
 // Surface Rapid Fire personal best
 (function () {
     try {

@@ -512,6 +512,68 @@ def hard_words():
     )
 
 
+@quiz_bp.route('/daily-challenge')
+@login_required
+def daily_challenge():
+    """Daily Challenge: 10 daily-seeded MCQ questions — same questions all day, new set tomorrow."""
+    import hashlib
+    import random as _random
+    from datetime import date as dt_date
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to take the Daily Challenge.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Deterministic daily seed: same 10 questions all day for this user
+    today_str = dt_date.today().isoformat()
+    seed_int = int(hashlib.md5(f"daily-{today_str}-{profile.id}".encode()).hexdigest(), 16)
+    rng = _random.Random(seed_int)
+
+    sample_size = min(10, len(all_words))
+    question_words = rng.sample(all_words, sample_size)
+    all_meanings = [uw.vocabulary.meaning_ko for uw in all_words]
+
+    questions = []
+    for uw in question_words:
+        correct = uw.vocabulary.meaning_ko
+        distractor_pool = [m for m in all_meanings if m != correct]
+        if len(distractor_pool) < 3:
+            continue
+        distractors = rng.sample(distractor_pool, min(3, len(distractor_pool)))
+        options = distractors + [correct]
+        rng.shuffle(options)
+        questions.append({
+            'word': uw.vocabulary.word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'correct': correct,
+            'options': options,
+        })
+
+    if not questions:
+        flash("Not enough vocabulary for the Daily Challenge!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    return render_template(
+        'quiz/daily_challenge.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+        today_str=today_str,
+    )
+
+
 @quiz_bp.route('/vocab-by-video/<video_id>')
 @login_required
 def vocab_by_video(video_id):
