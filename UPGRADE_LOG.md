@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [UX/Settings] Profile Settings page — edit name, daily goal, and English level
+Added a `/settings` page (GET + POST) to the auth blueprint that lets users update their display name, daily learning goal (5–120 min, rendered as a live-updating range slider), and English level (Beginner / Intermediate / Upper-Intermediate / Advanced). All three fields are stored on the existing `Profile` model — no schema changes. A `⚙` gear icon was added to the desktop nav and a "⚙ Settings" link to the mobile dropdown. This closes a key UX gap: `Profile.daily_goal_min` (used on the dashboard's daily progress bar and "Today's Focus" panel) had no edit UI, so every user was permanently locked at the 20-minute default they received at registration.
+
 ## 2026-04-11 - [Quiz] Hard Words Drill — targeted quiz for struggling vocabulary
 Added an 8th quiz mode: Hard Words Drill (`/quiz/hard-words`). It queries the user's vocabulary sorted by SRS ease_factor ASC (lowest = hardest to remember) and runs a 4-option multiple-choice quiz exclusively on those words, showing each word's ease bar (Hard / Tricky / Shaky) and review count in the question header. A "🎯 Drill Hard Words" button was added to the "Words Needing Attention" panel on the Learning Analytics page so users can go directly from seeing their weakest spots to drilling them. A rose-gradient card showing the live count of reviewed words was added to the Quiz Hub grid. Results link back to SRS Review and Analytics. This closes the key feedback loop missing from the app: before, users could see their hard words but had no way to target them specifically in a quiz.
 

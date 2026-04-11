@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10 max-w-2xl">
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
+        <p class="text-gray-500 mt-1">Update your display name, daily study goal, and English level.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.settings') }}" novalidate>
+        <div class="bg-white rounded-2xl shadow p-8 space-y-8">
+
+            <!-- Display Name -->
+            <div>
+                <label for="name" class="block text-sm font-bold text-gray-700 mb-2">
+                    Display Name
+                </label>
+                <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value="{{ profile.name }}"
+                    maxlength="100"
+                    required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           transition text-base"
+                    placeholder="Your display name"
+                    aria-describedby="name-hint"
+                >
+                <p id="name-hint" class="text-xs text-gray-400 mt-1">This appears on your dashboard greeting.</p>
+            </div>
+
+            <!-- Daily Learning Goal -->
+            <div>
+                <label for="daily_goal_min" class="block text-sm font-bold text-gray-700 mb-2">
+                    Daily Learning Goal (minutes)
+                </label>
+                <div class="flex items-center gap-4">
+                    <input
+                        id="daily_goal_min"
+                        name="daily_goal_min"
+                        type="range"
+                        min="5"
+                        max="120"
+                        step="5"
+                        value="{{ profile.daily_goal_min or 20 }}"
+                        class="flex-1 accent-blue-600 cursor-pointer"
+                        oninput="document.getElementById('goal-display').textContent = this.value + ' min'"
+                        aria-describedby="goal-hint"
+                    >
+                    <span id="goal-display"
+                          class="shrink-0 w-20 text-center bg-blue-50 text-blue-700 font-black text-lg rounded-lg py-1 px-2">
+                        {{ profile.daily_goal_min or 20 }} min
+                    </span>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 mt-1 px-0.5">
+                    <span>5 min</span>
+                    <span>30 min</span>
+                    <span>60 min</span>
+                    <span>90 min</span>
+                    <span>120 min</span>
+                </div>
+                <p id="goal-hint" class="text-xs text-gray-400 mt-2">
+                    Sets your daily progress bar on the dashboard. Recommended: 20–30 min for consistent progress.
+                </p>
+            </div>
+
+            <!-- English Level -->
+            <div>
+                <label for="level" class="block text-sm font-bold text-gray-700 mb-2">
+                    English Level
+                </label>
+                <select
+                    id="level"
+                    name="level"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           transition text-base bg-white"
+                    aria-describedby="level-hint"
+                >
+                    {% set current_level = profile.level or 'beginner' %}
+                    <option value="beginner"         {% if current_level == 'beginner' %}selected{% endif %}>Beginner — learning everyday words</option>
+                    <option value="intermediate"     {% if current_level == 'intermediate' %}selected{% endif %}>Intermediate — comfortable with most topics</option>
+                    <option value="upper-intermediate" {% if current_level == 'upper-intermediate' %}selected{% endif %}>Upper-Intermediate — nuance and idioms</option>
+                    <option value="advanced"         {% if current_level == 'advanced' %}selected{% endif %}>Advanced — near-native fluency</option>
+                </select>
+                <p id="level-hint" class="text-xs text-gray-400 mt-1">Helps us recommend appropriate video difficulty.</p>
+            </div>
+
+            <!-- Level preview chips -->
+            <div id="level-preview" class="hidden">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Recommended videos for your level</p>
+                <div id="level-chips" class="flex flex-wrap gap-2 text-xs"></div>
+            </div>
+
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex items-center justify-between mt-6">
+            <a href="{{ url_for('main.index') }}"
+               class="text-sm text-gray-500 hover:text-gray-700 transition">
+                ← Back to Dashboard
+            </a>
+            <button
+                type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-8 rounded-full
+                       transition shadow focus:outline-none focus:ring-2 focus:ring-blue-400">
+                Save Settings
+            </button>
+        </div>
+    </form>
+
+    <!-- Danger Zone -->
+    <div class="mt-12 bg-white rounded-2xl shadow p-8 border border-red-100">
+        <h2 class="text-lg font-bold text-red-600 mb-1">Account</h2>
+        <p class="text-sm text-gray-500 mb-4">Sign out of your account on this device.</p>
+        <a href="{{ url_for('auth.logout') }}"
+           class="inline-block border border-red-300 text-red-600 font-semibold py-2 px-5 rounded-full
+                  hover:bg-red-50 transition text-sm">
+            Log Out
+        </a>
+    </div>
+</div>
+
+<script>
+// Keep the goal display in sync when JS loads
+(function () {
+    var slider = document.getElementById('daily_goal_min');
+    var display = document.getElementById('goal-display');
+    if (slider && display) {
+        // Sync on page load (value already set by Jinja)
+        display.textContent = slider.value + ' min';
+    }
+
+    // Level → recommended difficulty chips
+    var levelSelect = document.getElementById('level');
+    var chipsWrap   = document.getElementById('level-preview');
+    var chips       = document.getElementById('level-chips');
+    var levelMap = {
+        'beginner':          [['Easy',   'bg-green-100 text-green-700'],  ['Easy videos, simple vocabulary']],
+        'intermediate':      [['Easy',   'bg-green-100 text-green-700'],  ['Medium', 'bg-yellow-100 text-yellow-700']],
+        'upper-intermediate':[['Medium', 'bg-yellow-100 text-yellow-700'],['Hard',   'bg-red-100 text-red-700']],
+        'advanced':          [['Hard',   'bg-red-100 text-red-700'],      ['All difficulty levels']]
+    };
+
+    function updateChips(val) {
+        var items = levelMap[val];
+        if (!items) { chipsWrap.classList.add('hidden'); return; }
+        chips.innerHTML = '';
+        items.forEach(function(item) {
+            if (Array.isArray(item) && item.length === 2) {
+                var span = document.createElement('span');
+                span.className = 'px-3 py-1 rounded-full font-semibold ' + item[1];
+                span.textContent = item[0];
+                chips.appendChild(span);
+            } else if (typeof item === 'string') {
+                var span = document.createElement('span');
+                span.className = 'px-3 py-1 rounded-full bg-gray-100 text-gray-600';
+                span.textContent = item;
+                chips.appendChild(span);
+            }
+        });
+        chipsWrap.classList.remove('hidden');
+    }
+
+    if (levelSelect) {
+        updateChips(levelSelect.value);
+        levelSelect.addEventListener('change', function() { updateChips(this.value); });
+    }
+})();
+</script>
+{% endblock %}

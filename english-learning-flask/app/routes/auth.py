@@ -56,6 +56,52 @@ def register():
         
     return render_template('auth/register.html')
 
+@auth_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    """Profile settings: update name, daily goal, and English level."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        daily_goal = request.form.get('daily_goal_min', '').strip()
+        level = request.form.get('level', '').strip()
+
+        errors = []
+        if not name:
+            errors.append("Display name cannot be empty.")
+        elif len(name) > 100:
+            errors.append("Display name must be 100 characters or fewer.")
+
+        try:
+            daily_goal_int = int(daily_goal)
+            if not (5 <= daily_goal_int <= 240):
+                errors.append("Daily goal must be between 5 and 240 minutes.")
+        except (ValueError, TypeError):
+            errors.append("Daily goal must be a whole number.")
+            daily_goal_int = profile.daily_goal_min
+
+        valid_levels = ('beginner', 'intermediate', 'upper-intermediate', 'advanced')
+        if level not in valid_levels:
+            errors.append("Please select a valid English level.")
+
+        if errors:
+            for msg in errors:
+                flash(msg, 'error')
+        else:
+            profile.name = name
+            profile.daily_goal_min = daily_goal_int
+            profile.level = level
+            db.session.commit()
+            flash("Settings saved successfully!", 'success')
+            return redirect(url_for('auth.settings'))
+
+    return render_template('auth/settings.html', profile=profile)
+
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
