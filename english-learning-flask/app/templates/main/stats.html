@@ -134,6 +134,28 @@
         </div>
     </div>
 
+    <!-- Vocabulary Growth Chart -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">Vocabulary Growth</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Cumulative words in your wordbook over the last 30 days</p>
+            </div>
+            <span class="shrink-0 text-sm font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 self-start sm:self-auto">
+                {{ total_vocab }} word{{ 's' if total_vocab != 1 }} total
+            </span>
+        </div>
+        {% if total_vocab > 0 %}
+        <canvas id="growthChart" height="80"></canvas>
+        {% else %}
+        <div class="flex flex-col items-center justify-center py-10 text-gray-400">
+            <span class="text-4xl mb-2">📚</span>
+            <p class="font-semibold">No vocabulary words yet.</p>
+            <a href="{{ url_for('video.index') }}" class="mt-3 text-sm text-blue-500 hover:underline">Watch a video and save words →</a>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Difficulty Analysis -->
     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
         <h3 class="font-bold text-lg mb-6">Learning Difficulty Distribution</h3>
@@ -251,5 +273,64 @@
             plugins: { legend: { display: false } }
         }
     });
+
+    // Vocabulary Growth Line Chart
+    const growthEl = document.getElementById('growthChart');
+    if (growthEl) {
+        const growthCtx = growthEl.getContext('2d');
+        const growthLabels = {{ vocab_growth_labels|tojson }};
+        const growthValues = {{ vocab_growth_values|tojson }};
+        // Gradient fill
+        const grad = growthCtx.createLinearGradient(0, 0, 0, 200);
+        grad.addColorStop(0, 'rgba(16,185,129,0.18)');
+        grad.addColorStop(1, 'rgba(16,185,129,0.01)');
+        new Chart(growthCtx, {
+            type: 'line',
+            data: {
+                labels: growthLabels,
+                datasets: [{
+                    label: 'Total Words',
+                    data: growthValues,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: grad,
+                    borderWidth: 2.5,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgb(16, 185, 129)',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.y} word${ctx.parsed.y !== 1 ? 's' : ''}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.04)' },
+                        ticks: { precision: 0, color: '#9ca3af' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxTicksLimit: 8,
+                            maxRotation: 0,
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}

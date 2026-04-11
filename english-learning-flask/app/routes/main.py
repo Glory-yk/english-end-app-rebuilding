@@ -163,10 +163,41 @@ def stats():
 
     streak_days = _calculate_streak(profile.id)
 
-    # 5. 30-Day Activity Heatmap
+    # 5. 30-Day Activity Heatmap + Vocabulary Growth
     thirty_days_start = (datetime.utcnow() - timedelta(days=29)).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
+
+    # Vocabulary growth: words added per day in the last 30 days
+    vocab_growth_rows = db.session.query(
+        func.date(UserVocabulary.created_at).label('date'),
+        func.count(UserVocabulary.id).label('count')
+    ).filter(
+        UserVocabulary.profile_id == profile.id,
+        UserVocabulary.created_at >= thirty_days_start
+    ).group_by(func.date(UserVocabulary.created_at)).all()
+
+    vocab_daily = {}
+    for row in vocab_growth_rows:
+        d = row.date if isinstance(row.date, str) else row.date.strftime('%Y-%m-%d')
+        vocab_daily[d] = row.count
+
+    # Baseline: words saved before the 30-day window
+    words_before_window = UserVocabulary.query.filter(
+        UserVocabulary.profile_id == profile.id,
+        UserVocabulary.created_at < thirty_days_start
+    ).count()
+
+    vocab_growth_labels = []
+    vocab_growth_values = []
+    cumulative = words_before_window
+    for i in range(29, -1, -1):
+        day = today_dt - timedelta(days=i)
+        day_str = day.strftime('%Y-%m-%d')
+        cumulative += vocab_daily.get(day_str, 0)
+        vocab_growth_labels.append(day.strftime('%b ') + str(day.day))
+        vocab_growth_values.append(cumulative)
+
     heatmap_stats = db.session.query(
         func.date(LearningSession.created_at).label('date'),
         func.sum(LearningSession.watched_sec).label('seconds'),
@@ -213,4 +244,6 @@ def stats():
                          heatmap_days=heatmap_days,
                          heatmap_offset=heatmap_offset,
                          active_days=active_days,
-                         best_day_mins=best_day_mins)
+                         best_day_mins=best_day_mins,
+                         vocab_growth_labels=vocab_growth_labels,
+                         vocab_growth_values=vocab_growth_values)

@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Analytics] Vocabulary Growth line chart on Learning Analytics page
+Added a full-width "Vocabulary Growth" line chart to the Stats page showing the cumulative number of words in the user's wordbook day-by-day over the last 30 days. The chart uses Chart.js (already loaded on the page) with a smooth tension-0.4 emerald gradient fill and hover tooltips. The backend adds two efficient queries to the `/stats` route — one `GROUP BY date` count over `user_vocabulary.created_at` for the 30-day window plus a single count of older words for the baseline — then builds a cumulative sum array passed to the template. An empty state with a CTA is shown for users with no vocabulary yet. No schema changes required.
+
 ## 2026-04-11 - [UI/UX] "Today's Focus" personalized study plan panel on dashboard
 Added a "Today's Focus" checklist panel between the stat cards and the Word of the Day on the dashboard. It displays three action-oriented tasks — (1) SRS vocabulary review (green/done when no words are due, amber with count + "Review →" button otherwise), (2) daily watch-time goal (green/done when goal_pct ≥ 100, blue with remaining minutes + "Watch →" otherwise), and (3) quiz recommendation (links to Quiz Hub if word_count ≥ 4, or back to videos to save more words). A "N/3 done" badge in the header updates dynamically based on the first two tasks. A single `word_count = len(all_words)` line was added to the dashboard route (zero extra DB query, reusing the already-fetched `all_words` list for Word of the Day).
 
