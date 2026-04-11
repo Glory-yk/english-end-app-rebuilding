@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Quiz] Rapid Fire — 60-second timed vocabulary blitz
+Added a 5th quiz mode to the Quiz Hub: Rapid Fire (`/quiz/rapid-fire`). A pool of up to 30 vocabulary words is sampled and presented one-by-one as multiple-choice questions (English word → pick correct Korean meaning). A 60-second SVG ring countdown with colour-coded urgency (yellow → orange → red in the final 20/10 seconds) drives the time pressure; clicking an answer or pressing 1–4 on the keyboard immediately shows colour feedback (green/red) and advances to the next question. A running score and answered-count HUD update live. On timeout the results screen shows correct / answered / accuracy %, a missed-words list (up to 5), a personal-best banner (persisted in localStorage) and saves the result to the shared quiz-history strip on the Quiz Hub. A wide full-row "Rapid Fire ⚡ Timed" card with a personal-best display was added to the Quiz Hub grid.
+
 ## 2026-04-11 - [Gamification] Achievements panel on Learning Analytics page
 Added a 10-badge Achievements system to the Stats page that awards milestones for first video watched, word collection (5/20/50 words), mastery (1/10 words mastered), streaks (3/7 days), and study time (1/5 hours). Each badge is shown as a coloured card when earned (indigo) or a greyed-out locked card, computed entirely from template variables already passed to the stats route — zero backend or schema changes required.
 

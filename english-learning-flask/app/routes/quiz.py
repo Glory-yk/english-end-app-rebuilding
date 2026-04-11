@@ -291,3 +291,52 @@ def spelling_bee():
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
     )
+
+
+@quiz_bp.route('/rapid-fire')
+@login_required
+def rapid_fire():
+    """Rapid Fire: answer as many MCQs as possible in 60 seconds."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to play Rapid Fire.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Pool of up to 30 questions so there's plenty to answer in 60 s
+    sample_size = min(30, len(all_words))
+    question_words = random.sample(all_words, sample_size)
+
+    all_meanings = [uw.vocabulary.meaning_ko for uw in all_words]
+
+    questions = []
+    for uw in question_words:
+        correct = uw.vocabulary.meaning_ko
+        distractors = random.sample(
+            [m for m in all_meanings if m != correct],
+            min(3, len(all_meanings) - 1),
+        )
+        options = distractors + [correct]
+        random.shuffle(options)
+        questions.append({
+            'word': uw.vocabulary.word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'correct': correct,
+            'options': options,
+        })
+
+    return render_template(
+        'quiz/rapid_fire.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+    )

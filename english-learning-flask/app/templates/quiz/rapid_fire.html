@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-black">⚡ Rapid Fire</h1>
+        <p class="text-gray-500 mt-1">Answer as many as you can in <strong>60 seconds</strong>!</p>
+    </div>
+
+    <!-- ── START SCREEN ─────────────────────────────────────────────────────── -->
+    <div id="start-screen" class="bg-white rounded-2xl shadow-xl p-10 text-center">
+        <div class="text-7xl mb-4">⚡</div>
+        <h2 class="text-2xl font-black mb-2">Ready to Blitz?</h2>
+        <p class="text-gray-500 mb-6 max-w-sm mx-auto">
+            {{ total }} words are loaded. Pick the correct Korean meaning before the clock runs out.
+            Every correct answer scores a point — wrong answers don't deduct.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mb-8 text-sm">
+            <span class="bg-yellow-100 text-yellow-700 font-bold px-3 py-1 rounded-full">⏱ 60 seconds</span>
+            <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">{{ total }} questions</span>
+            <span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">1-4 keyboard shortcuts</span>
+        </div>
+        <button id="start-btn" onclick="startGame()"
+                class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black py-4 px-10 rounded-full text-xl shadow-lg transition transform hover:scale-105 active:scale-95">
+            GO! ⚡
+        </button>
+    </div>
+
+    <!-- ── GAME SCREEN ──────────────────────────────────────────────────────── -->
+    <div id="game-screen" class="hidden">
+
+        <!-- HUD row -->
+        <div class="flex items-center justify-between mb-4">
+            <!-- Score -->
+            <div class="bg-white rounded-xl shadow px-5 py-2 text-center min-w-[90px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Score</div>
+                <div id="score-display" class="text-3xl font-black text-green-600">0</div>
+            </div>
+
+            <!-- Countdown ring -->
+            <div class="relative flex items-center justify-center w-24 h-24">
+                <svg class="absolute top-0 left-0 w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+                    <circle cx="48" cy="48" r="42" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                    <circle id="timer-ring" cx="48" cy="48" r="42" fill="none"
+                            stroke="#f59e0b" stroke-width="8"
+                            stroke-dasharray="263.9" stroke-dashoffset="0"
+                            stroke-linecap="round" class="transition-all duration-1000 ease-linear"/>
+                </svg>
+                <span id="timer-display" class="relative text-3xl font-black text-gray-800 tabular-nums">60</span>
+            </div>
+
+            <!-- Progress -->
+            <div class="bg-white rounded-xl shadow px-5 py-2 text-center min-w-[90px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Done</div>
+                <div id="progress-display" class="text-3xl font-black text-gray-700">0</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden">
+            <div id="time-bar" class="h-2 rounded-full bg-yellow-400 transition-all duration-1000 ease-linear" style="width:100%"></div>
+        </div>
+
+        <!-- Question card -->
+        <div id="question-card" class="bg-white rounded-2xl shadow-xl p-8 mb-4 text-center transition-all duration-150">
+            <div id="q-num" class="text-xs font-bold text-gray-400 uppercase mb-3">Question 1</div>
+            <div id="q-word" class="text-5xl font-black text-gray-900 mb-2 tracking-tight"></div>
+            <div id="q-phonetic" class="text-gray-400 italic text-sm mb-6"></div>
+
+            <!-- Answer flash overlay -->
+            <div id="answer-flash"
+                 class="hidden absolute inset-0 rounded-2xl flex items-center justify-center text-6xl font-black pointer-events-none z-10 opacity-0 transition-opacity duration-150">
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400">
+            Press <kbd class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 font-mono text-xs">1</kbd>
+            <kbd class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 font-mono text-xs">2</kbd>
+            <kbd class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 font-mono text-xs">3</kbd>
+            <kbd class="bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5 font-mono text-xs">4</kbd>
+            to answer instantly
+        </p>
+    </div>
+
+    <!-- ── RESULTS SCREEN ───────────────────────────────────────────────────── -->
+    <div id="result-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+        <div id="result-emoji" class="text-6xl mb-4"></div>
+        <h2 class="text-3xl font-black mb-1">Time's Up!</h2>
+        <p id="result-subtitle" class="text-gray-500 mb-6"></p>
+
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-green-50 rounded-xl p-4">
+                <div class="text-2xl font-black text-green-700" id="res-correct">0</div>
+                <div class="text-xs font-bold text-green-500 uppercase">Correct</div>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+                <div class="text-2xl font-black text-gray-700" id="res-total">0</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Answered</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4">
+                <div class="text-2xl font-black text-blue-700" id="res-pct">0%</div>
+                <div class="text-xs font-bold text-blue-500 uppercase">Accuracy</div>
+            </div>
+        </div>
+
+        <!-- Personal best banner -->
+        <div id="pb-banner" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-6 text-yellow-800 font-bold text-sm">
+            🏆 New Personal Best!
+        </div>
+
+        <!-- Missed words (up to 5) -->
+        <div id="missed-section" class="hidden text-left mb-6">
+            <h3 class="font-bold text-gray-700 mb-2 text-sm uppercase">Missed Words</h3>
+            <ul id="missed-list" class="space-y-1 text-sm text-gray-600"></ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onclick="restartGame()"
+                    class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black py-3 px-8 rounded-full transition shadow">
+                ⚡ Play Again
+            </button>
+            <a href="{{ url_for('quiz.index') }}"
+               class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-full transition text-center">
+                ← Quiz Hub
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    #question-card { position: relative; }
+
+    @keyframes pop-in {
+        0%   { transform: scale(0.85); opacity: 0; }
+        60%  { transform: scale(1.04); }
+        100% { transform: scale(1);    opacity: 1; }
+    }
+    .pop-in { animation: pop-in 0.18s ease-out forwards; }
+
+    @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        25%      { transform: translateX(-6px); }
+        75%      { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.25s ease-in-out; }
+
+    .opt-btn {
+        transition: background-color 0.1s, transform 0.1s;
+    }
+    .opt-btn:active { transform: scale(0.97); }
+    .opt-btn.correct { background-color: #bbf7d0 !important; border-color: #22c55e !important; color: #15803d !important; }
+    .opt-btn.wrong   { background-color: #fecaca !important; border-color: #ef4444 !important; color: #b91c1c !important; }
+</style>
+
+<script>
+const QUESTIONS = JSON.parse({{ questions_json | tojson }});
+const TOTAL_SEC = 60;
+const FEEDBACK_MS = 350; // how long to show correct/wrong flash before next Q
+
+let currentIdx = 0;
+let score = 0;
+let answered = 0;
+let missedWords = [];
+let timerInterval = null;
+let secondsLeft = TOTAL_SEC;
+let gameOver = false;
+let accepting = true; // false while showing feedback
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const startScreen  = document.getElementById('start-screen');
+const gameScreen   = document.getElementById('game-screen');
+const resultScreen = document.getElementById('result-screen');
+const timerDisplay = document.getElementById('timer-display');
+const timerRing    = document.getElementById('timer-ring');
+const timeBar      = document.getElementById('time-bar');
+const scoreDisplay = document.getElementById('score-display');
+const progressDisp = document.getElementById('progress-display');
+const qNum         = document.getElementById('q-num');
+const qWord        = document.getElementById('q-word');
+const qPhonetic    = document.getElementById('q-phonetic');
+const optionsGrid  = document.getElementById('options-grid');
+const questionCard = document.getElementById('question-card');
+
+const RING_CIRC = 263.9;
+
+// ── Game flow ─────────────────────────────────────────────────────────────────
+function startGame() {
+    startScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    renderQuestion();
+    startTimer();
+    document.addEventListener('keydown', onKey);
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerUI();
+        if (secondsLeft <= 0) endGame();
+    }, 1000);
+}
+
+function updateTimerUI() {
+    timerDisplay.textContent = secondsLeft;
+    const pct = secondsLeft / TOTAL_SEC;
+    const offset = RING_CIRC * (1 - pct);
+    timerRing.style.strokeDashoffset = offset;
+    timeBar.style.width = (pct * 100) + '%';
+
+    // Colour transitions
+    if (secondsLeft <= 10) {
+        timerRing.style.stroke = '#ef4444';
+        timeBar.style.backgroundColor = '#ef4444';
+        timerDisplay.style.color = '#ef4444';
+    } else if (secondsLeft <= 20) {
+        timerRing.style.stroke = '#f97316';
+        timeBar.style.backgroundColor = '#f97316';
+    }
+}
+
+function renderQuestion() {
+    if (currentIdx >= QUESTIONS.length) { endGame(); return; }
+    const q = QUESTIONS[currentIdx];
+
+    qNum.textContent = 'Question ' + (currentIdx + 1) + ' of ' + QUESTIONS.length;
+    qWord.textContent = q.word;
+    qPhonetic.textContent = q.phonetic ? '/' + q.phonetic + '/' : '';
+
+    optionsGrid.innerHTML = '';
+    q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn w-full text-left bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 font-semibold text-gray-800 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-800 text-sm';
+        btn.innerHTML = '<span class="text-xs font-black text-gray-400 mr-2">' + (i + 1) + '</span>' + opt;
+        btn.dataset.answer = opt;
+        btn.onclick = () => submitAnswer(opt, q.correct);
+        optionsGrid.appendChild(btn);
+    });
+
+    // Pop-in animation
+    questionCard.classList.remove('pop-in');
+    void questionCard.offsetWidth; // force reflow
+    questionCard.classList.add('pop-in');
+    accepting = true;
+}
+
+function submitAnswer(chosen, correct) {
+    if (!accepting || gameOver) return;
+    accepting = false;
+
+    const btns = optionsGrid.querySelectorAll('.opt-btn');
+    const isCorrect = chosen === correct;
+
+    btns.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.answer === correct) btn.classList.add('correct');
+        else if (btn.dataset.answer === chosen && !isCorrect) btn.classList.add('wrong');
+    });
+
+    answered++;
+    progressDisp.textContent = answered;
+
+    if (isCorrect) {
+        score++;
+        scoreDisplay.textContent = score;
+        scoreDisplay.classList.add('scale-125');
+        setTimeout(() => scoreDisplay.classList.remove('scale-125'), 200);
+    } else {
+        missedWords.push({ word: QUESTIONS[currentIdx].word, correct });
+        questionCard.classList.add('shake');
+        setTimeout(() => questionCard.classList.remove('shake'), 260);
+    }
+
+    currentIdx++;
+    setTimeout(renderQuestion, FEEDBACK_MS);
+}
+
+function onKey(e) {
+    if (gameOver || !accepting) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= 4) {
+        const btns = optionsGrid.querySelectorAll('.opt-btn');
+        if (btns[num - 1]) {
+            const q = QUESTIONS[currentIdx];
+            submitAnswer(btns[num - 1].dataset.answer, q.correct);
+        }
+    }
+}
+
+function endGame() {
+    if (gameOver) return;
+    gameOver = true;
+    clearInterval(timerInterval);
+    document.removeEventListener('keydown', onKey);
+
+    gameScreen.classList.add('hidden');
+    resultScreen.classList.remove('hidden');
+
+    const pct = answered > 0 ? Math.round(score / answered * 100) : 0;
+
+    document.getElementById('res-correct').textContent = score;
+    document.getElementById('res-total').textContent = answered;
+    document.getElementById('res-pct').textContent = pct + '%';
+
+    // Emoji + subtitle based on score
+    const emoji = score === 0 ? '😅' : score < 5 ? '🙂' : score < 10 ? '😊' : score < 15 ? '😎' : '🔥';
+    document.getElementById('result-emoji').textContent = emoji;
+    const msgs = [
+        [0,  0,  "Don't give up — try again!"],
+        [1,  4,  "Nice start — the speed will come!"],
+        [5,  9,  "Solid round! Keep the streak going."],
+        [10, 14, "Great job — you're really quick!"],
+        [15, 99, "Blazing fast — absolute legend! 🏆"],
+    ];
+    const sub = msgs.find(([lo, hi]) => score >= lo && score <= hi);
+    document.getElementById('result-subtitle').textContent = sub ? sub[2] : '';
+
+    // Missed words
+    if (missedWords.length) {
+        const section = document.getElementById('missed-section');
+        const list = document.getElementById('missed-list');
+        section.classList.remove('hidden');
+        missedWords.slice(0, 5).forEach(({ word, correct }) => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-2';
+            li.innerHTML = '<span class="text-red-400">✗</span><span class="font-bold">' + word + '</span><span class="text-gray-400">→</span><span>' + correct + '</span>';
+            list.appendChild(li);
+        });
+    }
+
+    // Personal best (localStorage)
+    try {
+        const key = 'englearn_rf_best';
+        const prev = parseInt(localStorage.getItem(key) || '0');
+        if (score > prev) {
+            localStorage.setItem(key, score);
+            if (prev > 0) document.getElementById('pb-banner').classList.remove('hidden');
+        }
+
+        // Shared quiz history for the Quiz Hub panel
+        saveQuizResult('⚡ Rapid Fire', score, answered);
+    } catch (e) {}
+}
+
+function saveQuizResult(type, s, t) {
+    try {
+        const hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+        const pct = t > 0 ? Math.round(s / t * 100) : 0;
+        hist.unshift({ type, icon: '⚡', score: s, total: t, pct, ts: Date.now() });
+        localStorage.setItem('englearn_quiz_history', JSON.stringify(hist.slice(0, 20)));
+    } catch (e) {}
+}
+
+function restartGame() {
+    // Reset state
+    currentIdx = 0; score = 0; answered = 0;
+    missedWords = []; secondsLeft = TOTAL_SEC;
+    gameOver = false; accepting = true;
+
+    // Shuffle questions again
+    for (let i = QUESTIONS.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [QUESTIONS[i], QUESTIONS[j]] = [QUESTIONS[j], QUESTIONS[i]];
+    }
+
+    // Reset UI
+    scoreDisplay.textContent = '0';
+    progressDisp.textContent = '0';
+    timerDisplay.textContent = '60';
+    timerDisplay.style.color = '';
+    timerRing.style.stroke = '#f59e0b';
+    timerRing.style.strokeDashoffset = '0';
+    timeBar.style.width = '100%';
+    timeBar.style.backgroundColor = '';
+    document.getElementById('missed-list').innerHTML = '';
+    document.getElementById('missed-section').classList.add('hidden');
+    document.getElementById('pb-banner').classList.add('hidden');
+
+    resultScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+
+    renderQuestion();
+    startTimer();
+    document.addEventListener('keydown', onKey);
+}
+</script>
+{% endblock %}
