@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Gamification] Achievements panel on Learning Analytics page
+Added a 10-badge Achievements system to the Stats page that awards milestones for first video watched, word collection (5/20/50 words), mastery (1/10 words mastered), streaks (3/7 days), and study time (1/5 hours). Each badge is shown as a coloured card when earned (indigo) or a greyed-out locked card, computed entirely from template variables already passed to the stats route — zero backend or schema changes required.
+
 ## 2026-04-11 - [UI/UX] Vocabulary word highlighting in the subtitle panel
 Words already saved to the user's wordbook are now highlighted green directly in the subtitle text on the video detail page, so learners can instantly see which words they've already learned vs. still need to save. On page load the subtitle panel scans every word span against the user's personal wordbook (server-rendered JSON set, O(1) lookups) and applies a `bg-green-100 text-green-700` highlight. When a new word is saved via click, every span containing that word is highlighted immediately in the client without a page reload, the "Saved from this video" counter badge in the subtitle header updates live, and a compact chip is appended to a new collapsible "Saved from this video" panel at the bottom of the subtitle sidebar — words already saved from this video also appear there on first load. No schema changes required.
 

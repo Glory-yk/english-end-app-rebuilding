@@ -135,7 +135,7 @@
     </div>
 
     <!-- Difficulty Analysis -->
-    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
         <h3 class="font-bold text-lg mb-6">Learning Difficulty Distribution</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             {% set levels = [('easy', 'Green', 'bg-green-100 text-green-700'), ('medium', 'Yellow', 'bg-yellow-100 text-yellow-700'), ('hard', 'Red', 'bg-red-100 text-red-700')] %}
@@ -144,6 +144,52 @@
                 <span class="text-sm font-bold uppercase mb-2">{{ label }} Level</span>
                 <span class="text-3xl font-black">{{ diff_dist.get(level, 0) }}</span>
                 <span class="text-xs mt-1">Videos Learned</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Achievements Panel -->
+    {% set mastered_n = vocab_dist.get('mastered', 0) %}
+    {% set ach_list = [
+        ('▶️', 'First Step',       'Watch your first video',         total_videos >= 1),
+        ('📝', 'Word Collector',   'Save 5+ words to your wordbook', total_vocab >= 5),
+        ('📚', 'Bookworm',         'Save 20+ words',                 total_vocab >= 20),
+        ('🏆', 'Scholar',          'Save 50+ words',                 total_vocab >= 50),
+        ('🌟', 'First Mastery',    'Master your first word',         mastered_n >= 1),
+        ('💎', 'Word Master',      'Master 10+ words',               mastered_n >= 10),
+        ('🔥', 'On Fire',          'Maintain a 3-day streak',        streak_days >= 3),
+        ('📅', 'Dedicated',        'Maintain a 7-day streak',        streak_days >= 7),
+        ('⏱️', 'Student',          'Study for 1+ hour total',        total_hours >= 1),
+        ('🎓', 'Committed',        'Study for 5+ hours total',       total_hours >= 5),
+    ] %}
+    {% set ns = namespace(earned=0) %}
+    {% for icon, title, desc, earned in ach_list %}
+        {% if earned %}{% set ns.earned = ns.earned + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">Achievements</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Milestones you've earned on your learning journey.</p>
+            </div>
+            <span class="shrink-0 text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 self-start sm:self-auto">
+                {{ ns.earned }} / {{ ach_list|length }} earned
+            </span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {% for icon, title, desc, earned in ach_list %}
+            <div class="flex flex-col items-center text-center p-4 rounded-xl border-2 transition-all
+                        {% if earned %}bg-indigo-50 border-indigo-200{% else %}bg-gray-50 border-gray-200 opacity-50{% endif %}">
+                <div class="text-3xl mb-2" aria-hidden="true">{{ icon }}</div>
+                <p class="font-bold text-sm text-gray-800 leading-tight">{{ title }}</p>
+                <p class="text-xs text-gray-500 mt-1 leading-tight">{{ desc }}</p>
+                {% if earned %}
+                <span class="mt-2 text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">✓ Earned</span>
+                {% else %}
+                <span class="mt-2 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Locked</span>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
