@@ -1,12 +1,12 @@
 import hashlib
 from datetime import datetime, timedelta, date as date_type
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 from sqlalchemy import func, case
 from sqlalchemy.orm import joinedload
 from app.models.profile import Profile
 from app.models.progress import LearningSession, Quiz
-from app.models.vocabulary import UserVocabulary
+from app.models.vocabulary import UserVocabulary, Vocabulary
 from app.models.video import Video, Channel
 from app import db
 
@@ -263,3 +263,54 @@ def stats():
                          vocab_growth_labels=vocab_growth_labels,
                          vocab_growth_values=vocab_growth_values,
                          struggling_words=struggling_words)
+
+
+@main_bp.route('/search')
+@login_required
+def search():
+    """Site-wide search: videos by title/channel, vocabulary by word/meaning."""
+    q = request.args.get('q', '').strip()
+
+    videos = []
+    vocab_results = []
+
+    if len(q) >= 2:
+        like_q = f'%{q}%'
+
+        # Search all videos in the library by title or channel name
+        videos = (
+            Video.query
+            .filter(
+                db.or_(
+                    Video.title.ilike(like_q),
+                    Video.channel_name.ilike(like_q),
+                )
+            )
+            .order_by(Video.created_at.desc())
+            .limit(12)
+            .all()
+        )
+
+        # Search the current user's personal wordbook by English word or Korean meaning
+        profile = Profile.query.filter_by(user_id=current_user.id).first()
+        if profile:
+            vocab_results = (
+                UserVocabulary.query
+                .filter_by(profile_id=profile.id)
+                .join(UserVocabulary.vocabulary)
+                .filter(
+                    db.or_(
+                        Vocabulary.word.ilike(like_q),
+                        Vocabulary.meaning_ko.ilike(like_q),
+                    )
+                )
+                .limit(12)
+                .all()
+            )
+
+    return render_template(
+        'main/search.html',
+        q=q,
+        videos=videos,
+        vocab_results=vocab_results,
+    )

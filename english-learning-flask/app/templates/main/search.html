@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10 max-w-4xl">
+
+    <!-- Search bar -->
+    <form action="{{ url_for('main.search') }}" method="get" class="mb-8">
+        <label for="search-input" class="sr-only">Search</label>
+        <div class="flex gap-2 shadow-lg rounded-2xl overflow-hidden">
+            <input id="search-input"
+                   type="search"
+                   name="q"
+                   value="{{ q }}"
+                   placeholder="Search videos or vocabulary…"
+                   autofocus
+                   class="flex-1 px-5 py-4 text-lg text-gray-800 focus:outline-none border-0"
+                   aria-label="Search query">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 text-lg transition"
+                    aria-label="Submit search">
+                Search
+            </button>
+        </div>
+    </form>
+
+    {% if q and q | length >= 2 %}
+
+        <!-- Summary line -->
+        {% set total = videos | length + vocab_results | length %}
+        <p class="text-gray-500 text-sm mb-6">
+            {% if total == 0 %}
+                No results for <strong class="text-gray-800">"{{ q }}"</strong>.
+            {% else %}
+                Found <strong class="text-gray-800">{{ total }} result{{ 's' if total != 1 }}</strong>
+                for <strong class="text-gray-800">"{{ q }}"</strong>.
+            {% endif %}
+        </p>
+
+        <!-- ── Video Results ──────────────────────────────────── -->
+        <section aria-labelledby="videos-heading" class="mb-10">
+            <h2 id="videos-heading"
+                class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="bg-blue-100 text-blue-700 rounded-lg px-2 py-0.5 text-sm font-semibold">
+                    {{ videos | length }}
+                </span>
+                Videos
+            </h2>
+
+            {% if videos %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {% for video in videos %}
+                <a href="{{ url_for('video.detail', video_id=video.id) }}"
+                   class="flex gap-3 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 hover:border-blue-200 transition p-3 group">
+                    <!-- Thumbnail -->
+                    <div class="shrink-0 w-28 h-16 rounded-lg overflow-hidden bg-gray-200 relative">
+                        {% if video.thumbnail_url %}
+                        <img src="{{ video.thumbnail_url }}"
+                             alt="{{ video.title }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-400 text-2xl">▶</div>
+                        {% endif %}
+                        {% if video.difficulty %}
+                        <span class="absolute bottom-1 left-1 text-xs font-bold px-1.5 py-0.5 rounded
+                            {% if video.difficulty == 'easy' %}bg-green-500 text-white
+                            {% elif video.difficulty == 'medium' %}bg-yellow-400 text-yellow-900
+                            {% else %}bg-red-500 text-white{% endif %}">
+                            {{ video.difficulty | title }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <!-- Meta -->
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-800 text-sm leading-tight line-clamp-2
+                                  group-hover:text-blue-600 transition">
+                            {{ video.title }}
+                        </p>
+                        {% if video.channel_name %}
+                        <p class="text-xs text-gray-400 mt-1 truncate">{{ video.channel_name }}</p>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-400 text-sm italic">No videos match this search.</p>
+            {% endif %}
+        </section>
+
+        <!-- ── Vocabulary Results ─────────────────────────────── -->
+        <section aria-labelledby="vocab-heading">
+            <h2 id="vocab-heading"
+                class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="bg-emerald-100 text-emerald-700 rounded-lg px-2 py-0.5 text-sm font-semibold">
+                    {{ vocab_results | length }}
+                </span>
+                My Vocabulary
+            </h2>
+
+            {% if vocab_results %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {% for uv in vocab_results %}
+                {% set v = uv.vocabulary %}
+                <a href="{{ url_for('vocab.word_detail', word_id=uv.id) }}"
+                   class="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 hover:border-emerald-200 transition p-4 group block">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-bold text-gray-800 group-hover:text-emerald-600 transition truncate">
+                                {{ v.word }}
+                            </p>
+                            {% if v.phonetic %}
+                            <p class="text-xs text-gray-400 font-mono">{{ v.phonetic }}</p>
+                            {% endif %}
+                            <p class="text-sm text-gray-600 mt-1 line-clamp-1">{{ v.meaning_ko }}</p>
+                        </div>
+                        <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded-full capitalize
+                            {% if uv.status == 'mastered' %}bg-green-100 text-green-700
+                            {% elif uv.status == 'review' %}bg-blue-100 text-blue-700
+                            {% elif uv.status == 'learning' %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {{ uv.status }}
+                        </span>
+                    </div>
+                    {% if v.example_en %}
+                    <p class="text-xs text-gray-400 mt-2 italic line-clamp-1">{{ v.example_en }}</p>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-400 text-sm italic">No words in your wordbook match this search.</p>
+            {% endif %}
+        </section>
+
+    {% elif q %}
+        <!-- Query too short -->
+        <p class="text-gray-500">Please enter at least 2 characters to search.</p>
+
+    {% else %}
+        <!-- Empty state — no query yet -->
+        <div class="text-center py-16 text-gray-400">
+            <div class="text-6xl mb-4">🔍</div>
+            <h2 class="text-xl font-semibold text-gray-600 mb-2">Search your library</h2>
+            <p class="text-sm">Find videos by title or channel, or look up words in your personal wordbook.</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
