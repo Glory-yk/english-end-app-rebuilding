@@ -6,10 +6,12 @@ node_modules/
 
 # Virtual Environments
 venv/
+venv_test/
 .venv/
 env/
 .env/
 **/venv/
+**/venv_test/
 **/env/
 **/venv_pkgs/
 
