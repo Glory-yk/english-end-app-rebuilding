@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Bug Fix / Analytics] Fix stats page NameError + "Words Needing Attention" panel
+Fixed a critical NameError crash on the Learning Analytics page: `today_dt` was referenced in the vocabulary growth loop ~20 lines before its assignment (the `today_dt = datetime.utcnow().date()` line appeared further down in the heatmap section), causing a 500 error for every user who visited `/stats`. Moved the definition to just above the first loop that uses it. Additionally added a "Words Needing Attention" panel below the Vocabulary Growth chart: queries up to 6 reviewed words (repetitions > 0) sorted by ease_factor ASC so the hardest words surface first. Each card shows the English word, Korean meaning, a colour-coded ease progress bar (rose = Hard / amber = Tricky / yellow = Shaky mapped from the SM-2 ease_factor range 1.3–2.5), review-count badge, and links to the Word Detail page. A "Start Review →" CTA and an empty state for users with no review history complete the panel. No schema changes required.
+
 ## 2026-04-11 - [UI/UX] Landing page redesign with feature highlights and How-it-Works section
 The landing page was a single 13-line hero block with no information about the app's capabilities. Replaced it with a full marketing page: a gradient hero with a sub-headline and dual CTAs, a 6-card feature grid (Watch & Learn, Vocabulary SRS, 5 Quiz Modes, Immersive Modes, Grammar Patterns, Kids Mode), a 3-step "How it works" section, and a closing gradient CTA banner. No backend or route changes required.
 

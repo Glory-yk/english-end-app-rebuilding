@@ -156,6 +156,64 @@
         {% endif %}
     </div>
 
+    <!-- Words Needing Attention -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">Words Needing Attention</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Words you've found hardest to remember — ease bar shows retention strength.</p>
+            </div>
+            <a href="{{ url_for('vocab.review') }}"
+               class="shrink-0 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100 hover:bg-rose-100 transition-colors self-start sm:self-auto">
+                Start Review →
+            </a>
+        </div>
+        {% if struggling_words %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {% for uw in struggling_words %}
+            {# ease_factor range: 1.3 (hardest) → 2.5 (easiest), mapped to 0–100% #}
+            {% set ease_pct = [[(uw.ease_factor - 1.3) / (2.5 - 1.3) * 100, 0]|max, 100]|min|int %}
+            {% if ease_pct < 30 %}
+                {% set bar_color = 'bg-rose-500' %}
+                {% set badge_color = 'text-rose-700 bg-rose-100' %}
+                {% set diff_label = 'Hard' %}
+            {% elif ease_pct < 60 %}
+                {% set bar_color = 'bg-amber-400' %}
+                {% set badge_color = 'text-amber-700 bg-amber-100' %}
+                {% set diff_label = 'Tricky' %}
+            {% else %}
+                {% set bar_color = 'bg-yellow-300' %}
+                {% set badge_color = 'text-yellow-700 bg-yellow-100' %}
+                {% set diff_label = 'Shaky' %}
+            {% endif %}
+            <a href="{{ url_for('vocab.word_detail', word_id=uw.id) }}"
+               class="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200 hover:border-rose-300 hover:bg-rose-50 transition-colors group">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <span class="font-bold text-gray-800 group-hover:text-rose-700 transition-colors truncate">{{ uw.vocabulary.word }}</span>
+                        <span class="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded {{ badge_color }}">{{ diff_label }}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 truncate mb-2">{{ uw.vocabulary.meaning_ko }}</p>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden" title="Retention ease: {{ ease_pct }}%">
+                            <div class="h-full {{ bar_color }} rounded-full" style="width: {{ ease_pct }}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-400 shrink-0 tabular-nums">{{ uw.repetitions }}×</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 mt-3">Bar = retention ease (fuller is better). Click a word to view its detail page.</p>
+        {% else %}
+        <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+            <span class="text-3xl mb-2">👏</span>
+            <p class="font-semibold text-sm">No struggling words yet!</p>
+            <p class="text-xs mt-1">Complete some vocabulary reviews to see difficulty insights here.</p>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Difficulty Analysis -->
     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
         <h3 class="font-bold text-lg mb-6">Learning Difficulty Distribution</h3>

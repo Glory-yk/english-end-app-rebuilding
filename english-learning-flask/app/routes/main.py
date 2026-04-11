@@ -188,6 +188,8 @@ def stats():
         UserVocabulary.created_at < thirty_days_start
     ).count()
 
+    today_dt = datetime.utcnow().date()
+
     vocab_growth_labels = []
     vocab_growth_values = []
     cumulative = words_before_window
@@ -211,7 +213,6 @@ def stats():
         d = row.date if isinstance(row.date, str) else row.date.strftime('%Y-%m-%d')
         raw_heatmap[d] = (row.seconds or 0) // 60  # seconds → minutes
 
-    today_dt = datetime.utcnow().date()
     heatmap_days = []
     for i in range(29, -1, -1):
         day = today_dt - timedelta(days=i)
@@ -231,6 +232,20 @@ def stats():
     active_days = sum(1 for d in heatmap_days if d['minutes'] > 0)
     best_day_mins = max((d['minutes'] for d in heatmap_days), default=0)
 
+    # Words Needing Attention: reviewed at least once, ordered by ease_factor ASC
+    # (lower ease_factor = harder for the learner to recall)
+    struggling_words = (
+        UserVocabulary.query
+        .filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.repetitions > 0,
+        )
+        .join(UserVocabulary.vocabulary)
+        .order_by(UserVocabulary.ease_factor.asc())
+        .limit(6)
+        .all()
+    )
+
     return render_template('main/stats.html',
                          profile=profile,
                          total_hours=round(total_watched_sec / 3600, 1),
@@ -246,4 +261,5 @@ def stats():
                          active_days=active_days,
                          best_day_mins=best_day_mins,
                          vocab_growth_labels=vocab_growth_labels,
-                         vocab_growth_values=vocab_growth_values)
+                         vocab_growth_values=vocab_growth_values,
+                         struggling_words=struggling_words)
