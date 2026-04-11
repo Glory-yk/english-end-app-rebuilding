@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-lg">
+
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-black">✅ True or False</h1>
+        <p class="text-gray-500 mt-1">Is the Korean meaning shown <strong>correct</strong> for that word?</p>
+    </div>
+
+    <!-- ── START SCREEN ─────────────────────────────────────────────────────── -->
+    <div id="start-screen" class="bg-white rounded-2xl shadow-xl p-10 text-center">
+        <div class="text-7xl mb-4">🎯</div>
+        <h2 class="text-2xl font-black mb-2">Ready to Judge?</h2>
+        <p class="text-gray-500 mb-6 mx-auto max-w-sm">
+            {{ total }} words are loaded. For each one you'll see an English word and a Korean meaning —
+            tap <strong class="text-green-600">TRUE</strong> if it matches or
+            <strong class="text-red-500">FALSE</strong> if it doesn't.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mb-8 text-sm">
+            <span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full">T = True</span>
+            <span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full">F = False</span>
+            <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">{{ total }} questions</span>
+        </div>
+        <button onclick="startGame()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-12 rounded-full text-xl shadow-lg transition transform hover:scale-105 active:scale-95">
+            Start →
+        </button>
+    </div>
+
+    <!-- ── GAME SCREEN ──────────────────────────────────────────────────────── -->
+    <div id="game-screen" class="hidden">
+
+        <!-- HUD -->
+        <div class="flex items-center justify-between mb-4 px-1">
+            <div class="bg-white rounded-xl shadow px-4 py-2 text-center min-w-[80px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Score</div>
+                <div id="score-display" class="text-3xl font-black text-green-600">0</div>
+            </div>
+            <div class="text-sm font-bold text-gray-500">
+                <span id="q-num">1</span> / {{ total }}
+            </div>
+            <div class="bg-white rounded-xl shadow px-4 py-2 text-center min-w-[80px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Wrong</div>
+                <div id="wrong-display" class="text-3xl font-black text-red-500">0</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden">
+            <div id="progress-bar" class="h-2 rounded-full bg-indigo-400 transition-all duration-300" style="width:0%"></div>
+        </div>
+
+        <!-- Question card -->
+        <div id="question-card" class="bg-white rounded-2xl shadow-xl p-8 mb-4 text-center relative overflow-hidden">
+
+            <!-- Feedback flash overlay -->
+            <div id="feedback-overlay"
+                 class="hidden absolute inset-0 flex items-center justify-center text-7xl font-black pointer-events-none opacity-0 transition-opacity duration-200 rounded-2xl z-10">
+            </div>
+
+            <!-- Word -->
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">English Word</p>
+            <div id="q-word" class="text-5xl font-black text-indigo-600 mb-1 tracking-tight"></div>
+            <div id="q-phonetic" class="text-gray-400 italic text-sm mb-6 min-h-[1.25rem]"></div>
+
+            <!-- Meaning under judgement -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 mb-2">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Korean Meaning</p>
+                <p id="q-meaning" class="text-2xl font-bold text-gray-800"></p>
+            </div>
+            <p id="q-pos" class="text-xs text-indigo-400 font-semibold mb-6 min-h-[1rem]"></p>
+
+            <!-- True / False buttons -->
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btn-true"
+                        onclick="answer(true)"
+                        class="flex flex-col items-center justify-center gap-1 bg-green-50 hover:bg-green-100 border-2 border-green-300 hover:border-green-500 text-green-700 font-black py-5 rounded-2xl text-2xl transition transform hover:scale-105 active:scale-95">
+                    <span>✅</span>
+                    <span class="text-base">TRUE</span>
+                    <span class="text-xs font-normal text-green-500">[ T ]</span>
+                </button>
+                <button id="btn-false"
+                        onclick="answer(false)"
+                        class="flex flex-col items-center justify-center gap-1 bg-red-50 hover:bg-red-100 border-2 border-red-300 hover:border-red-500 text-red-600 font-black py-5 rounded-2xl text-2xl transition transform hover:scale-105 active:scale-95">
+                    <span>❌</span>
+                    <span class="text-base">FALSE</span>
+                    <span class="text-xs font-normal text-red-400">[ F ]</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Reveal row (shown after answer) -->
+        <div id="reveal-row" class="hidden bg-white rounded-xl shadow px-5 py-4 text-sm text-gray-700 mb-2">
+            <p id="reveal-text"></p>
+        </div>
+    </div>
+
+    <!-- ── RESULTS SCREEN ─────────────────────────────────────────────────────── -->
+    <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+        <div id="result-emoji" class="text-6xl mb-3">🎉</div>
+        <h2 class="text-2xl font-black mb-1">Quiz Complete!</h2>
+        <p id="result-subtitle" class="text-gray-500 mb-6"></p>
+
+        <div class="flex justify-center gap-6 mb-8">
+            <div class="text-center">
+                <div id="result-score" class="text-5xl font-black text-green-600"></div>
+                <div class="text-xs text-gray-400 font-bold uppercase mt-1">Correct</div>
+            </div>
+            <div class="text-center">
+                <div id="result-pct" class="text-5xl font-black text-indigo-600"></div>
+                <div class="text-xs text-gray-400 font-bold uppercase mt-1">Accuracy</div>
+            </div>
+        </div>
+
+        <!-- Missed words -->
+        <div id="missed-section" class="hidden text-left mb-8">
+            <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Words You Missed</h3>
+            <ul id="missed-list" class="space-y-2"></ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{{ url_for('quiz.true_false') }}"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 px-8 rounded-full transition">
+                Play Again
+            </a>
+            <a href="{{ url_for('quiz.index') }}"
+               class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-full transition">
+                Quiz Hub
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = JSON.parse('{{ questions_json | safe }}');
+let idx = 0, score = 0, wrong = 0;
+const missed = [];
+let answering = false;
+
+function startGame() {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    showQuestion();
+}
+
+function showQuestion() {
+    if (idx >= QUESTIONS.length) { showResults(); return; }
+    answering = false;
+    const q = QUESTIONS[idx];
+    document.getElementById('q-num').textContent = idx + 1;
+    document.getElementById('q-word').textContent = q.word;
+    document.getElementById('q-phonetic').textContent = q.phonetic || '';
+    document.getElementById('q-meaning').textContent = q.shown_meaning;
+    document.getElementById('q-pos').textContent = q.pos ? '(' + q.pos + ')' : '';
+    document.getElementById('progress-bar').style.width = (idx / QUESTIONS.length * 100) + '%';
+    document.getElementById('reveal-row').classList.add('hidden');
+    // Reset button styles
+    document.getElementById('btn-true').className = document.getElementById('btn-true').className
+        .replace(/border-green-500|border-red-500|opacity-50/g, '').trim();
+    document.getElementById('btn-false').className = document.getElementById('btn-false').className
+        .replace(/border-green-500|border-red-500|opacity-50/g, '').trim();
+}
+
+function answer(userSaidTrue) {
+    if (answering) return;
+    answering = true;
+    const q = QUESTIONS[idx];
+    const correct = (userSaidTrue === q.is_correct);
+
+    // Flash overlay
+    const overlay = document.getElementById('feedback-overlay');
+    overlay.textContent = correct ? '✅' : '❌';
+    overlay.style.backgroundColor = correct ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)';
+    overlay.classList.remove('hidden');
+    overlay.style.opacity = '1';
+    setTimeout(() => { overlay.style.opacity = '0'; setTimeout(() => overlay.classList.add('hidden'), 200); }, 600);
+
+    // Update counters
+    if (correct) {
+        score++;
+        document.getElementById('score-display').textContent = score;
+        if ('speechSynthesis' in window) {
+            const u = new SpeechSynthesisUtterance(q.word);
+            u.lang = 'en-US'; u.rate = 0.85;
+            window.speechSynthesis.speak(u);
+        }
+    } else {
+        wrong++;
+        document.getElementById('wrong-display').textContent = wrong;
+        missed.push(q);
+    }
+
+    // Reveal the correct answer
+    const reveal = document.getElementById('reveal-row');
+    const revealText = document.getElementById('reveal-text');
+    if (q.is_correct) {
+        revealText.innerHTML = '<span class="font-bold text-green-700">' + escHtml(q.word) + '</span> → <span class="font-bold">' + escHtml(q.correct_meaning) + '</span> ✅ (that was the <em>correct</em> meaning)';
+    } else {
+        revealText.innerHTML = '<span class="font-bold text-green-700">' + escHtml(q.word) + '</span> → <span class="font-bold">' + escHtml(q.correct_meaning) + '</span> (shown meaning was <span class="text-red-500 font-bold">wrong</span>)';
+    }
+    reveal.classList.remove('hidden');
+
+    idx++;
+    setTimeout(showQuestion, 1100);
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showResults() {
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('results-screen').classList.remove('hidden');
+    const total = QUESTIONS.length;
+    const pct = Math.round(score / total * 100);
+    document.getElementById('result-score').textContent = score + ' / ' + total;
+    document.getElementById('result-pct').textContent = pct + '%';
+    document.getElementById('result-emoji').textContent = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '👍' : '📚';
+    document.getElementById('result-subtitle').textContent =
+        pct >= 90 ? 'Outstanding! You know your vocabulary cold.' :
+        pct >= 70 ? 'Great work — keep reviewing to sharpen the rest.' :
+        pct >= 50 ? 'Good effort! Review your missed words below.' :
+        'Keep practising — these words need more attention.';
+
+    // Missed words list
+    if (missed.length) {
+        const section = document.getElementById('missed-section');
+        const list = document.getElementById('missed-list');
+        section.classList.remove('hidden');
+        missed.forEach(function(q) {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm';
+            li.innerHTML = '<span class="font-bold text-gray-800">' + escHtml(q.word) + '</span>'
+                + (q.phonetic ? ' <span class="text-gray-400 italic">' + escHtml(q.phonetic) + '</span>' : '')
+                + ' — <span class="text-gray-700">' + escHtml(q.correct_meaning) + '</span>';
+            list.appendChild(li);
+        });
+    }
+
+    // Save to quiz history (shared with other quiz modes)
+    try {
+        const hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+        hist.unshift({ type: 'True/False', icon: '✅', score: score, total: QUESTIONS.length, pct: pct, ts: Date.now() });
+        localStorage.setItem('englearn_quiz_history', JSON.stringify(hist.slice(0, 20)));
+    } catch(e) {}
+}
+
+// Keyboard shortcuts: T / ArrowRight = True, F / ArrowLeft = False
+document.addEventListener('keydown', function(e) {
+    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+    if (document.getElementById('game-screen').classList.contains('hidden')) return;
+    if (e.code === 'KeyT' || e.code === 'ArrowRight') { e.preventDefault(); answer(true); }
+    else if (e.code === 'KeyF' || e.code === 'ArrowLeft') { e.preventDefault(); answer(false); }
+});
+</script>
+{% endblock %}

@@ -385,6 +385,57 @@ def word_match():
     )
 
 
+@quiz_bp.route('/true-false')
+@login_required
+def true_false():
+    """True or False: judge whether the shown Korean meaning is correct for the word."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to play True or False.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    sample_size = min(12, len(all_words))
+    question_words = random.sample(all_words, sample_size)
+    all_meanings = [uw.vocabulary.meaning_ko for uw in all_words]
+
+    questions = []
+    for uw in question_words:
+        correct_meaning = uw.vocabulary.meaning_ko
+        show_correct = random.random() >= 0.5
+        if show_correct:
+            shown_meaning = correct_meaning
+        else:
+            others = [m for m in all_meanings if m != correct_meaning]
+            shown_meaning = random.choice(others) if others else correct_meaning
+            if shown_meaning == correct_meaning:
+                show_correct = True  # fallback when only 1 unique meaning
+        questions.append({
+            'word': uw.vocabulary.word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'correct_meaning': correct_meaning,
+            'shown_meaning': shown_meaning,
+            'is_correct': show_correct,
+        })
+
+    return render_template(
+        'quiz/true_false.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+    )
+
+
 @quiz_bp.route('/hard-words')
 @login_required
 def hard_words():
