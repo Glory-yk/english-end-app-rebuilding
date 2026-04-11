@@ -1,14 +1,150 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center bg-blue-50">
-    <div class="text-center">
-        <h1 class="text-6xl font-black text-blue-900 mb-6">Master English through YouTube</h1>
-        <p class="text-xl text-gray-700 mb-10 max-w-2xl mx-auto">Learn vocabulary, practice speaking, and track your progress with our AI-powered language learning platform.</p>
-        <div class="space-x-4">
-            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">Start Learning Now</a>
-            <a href="{{ url_for('auth.login') }}" class="bg-white text-blue-600 font-bold py-4 px-8 rounded-full text-lg shadow-lg hover:bg-gray-50 transition">Log In</a>
+<!-- Hero -->
+<div class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+    <div class="container mx-auto px-4 py-20 text-center">
+        <span class="inline-block bg-white bg-opacity-20 text-blue-100 text-sm font-bold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
+            AI-Powered English Learning
+        </span>
+        <h1 class="text-5xl md:text-6xl font-black mb-6 leading-tight">
+            Master English<br>through YouTube
+        </h1>
+        <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Watch real videos, save words you don't know, and lock them into memory with spaced repetition and interactive quizzes — all in one place.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ url_for('auth.register') }}"
+               class="bg-white text-blue-700 font-black py-4 px-10 rounded-full text-lg shadow-xl hover:bg-blue-50 transition transform hover:-translate-y-1">
+                Start Learning — It's Free
+            </a>
+            <a href="{{ url_for('auth.login') }}"
+               class="border-2 border-white text-white font-bold py-4 px-10 rounded-full text-lg hover:bg-white hover:text-blue-700 transition">
+                Log In
+            </a>
         </div>
+    </div>
+</div>
+
+<!-- Feature Highlights -->
+<div class="bg-gray-50 py-20">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-black text-gray-900 mb-3">Everything you need to improve</h2>
+            <p class="text-gray-500 text-lg max-w-xl mx-auto">Six integrated learning tools that work together to build real English fluency.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <!-- Feature 1: Watch & Learn -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl mb-4">📺</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Watch &amp; Learn</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Add any YouTube video and study with synced subtitles. Click any word to save it instantly. Active subtitle highlighting follows along as you watch.
+                </p>
+            </div>
+
+            <!-- Feature 2: Spaced Repetition -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl mb-4">🧠</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Vocabulary SRS</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    The SM-2 spaced-repetition algorithm schedules your reviews so you spend time on the words you need most. Words you know well appear less often.
+                </p>
+            </div>
+
+            <!-- Feature 3: 5 Quiz Modes -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-2xl mb-4">⚡</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">5 Quiz Modes</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Vocabulary Challenge, Sentence Scramble, Cloze (fill-in-the-blank), Spelling Bee, and 60-second Rapid Fire — each mode trains a different skill.
+                </p>
+            </div>
+
+            <!-- Feature 4: Learning Modes -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-2xl mb-4">👂</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Immersive Modes</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Listening Comprehension, Dictation Practice, and Sentence Shadowing — three dedicated modes that push your ear and speaking skills beyond passive watching.
+                </p>
+            </div>
+
+            <!-- Feature 5: Grammar Analysis -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl mb-4">📖</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Grammar Patterns</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Scan any video's subtitles for grammar patterns — modal verbs, passive voice, conditionals, present perfect, and more — shown in real-sentence examples.
+                </p>
+            </div>
+
+            <!-- Feature 6: Kids Mode -->
+            <div class="bg-white rounded-2xl shadow-md p-7 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center text-2xl mb-4">🎈</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Kids Mode</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    A colourful, child-friendly interface with channel browsing for young learners. Parents can curate channels; kids explore and watch in a safe environment.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- How it Works -->
+<div class="bg-white py-20">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-black text-gray-900 mb-3">How it works</h2>
+            <p class="text-gray-500 text-lg">Three simple steps to English fluency.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg">
+                    1
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Add a Video</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Paste any YouTube URL or browse curated channels. Subtitles are fetched and synced automatically.
+                </p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg">
+                    2
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Save New Words</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Tap any word in the subtitle panel to save it to your personal wordbook. Already-saved words are highlighted green so you always know what you know.
+                </p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-lg">
+                    3
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Review &amp; Quiz</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    The SRS engine schedules daily reviews. When you're ready, take quizzes to test and deepen what you've learned.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final CTA -->
+<div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
+    <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl md:text-4xl font-black mb-4">Ready to start learning?</h2>
+        <p class="text-blue-100 text-lg mb-8 max-w-lg mx-auto">
+            Create a free account in seconds and begin turning YouTube videos into lasting English skills.
+        </p>
+        <a href="{{ url_for('auth.register') }}"
+           class="inline-block bg-white text-blue-700 font-black py-4 px-12 rounded-full text-lg shadow-xl hover:bg-blue-50 transition transform hover:-translate-y-1">
+            Get Started for Free →
+        </a>
     </div>
 </div>
 {% endblock %}
