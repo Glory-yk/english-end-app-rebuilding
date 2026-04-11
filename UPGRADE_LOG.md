@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Feature/Vocabulary] Flip-card Flashcard Mode for free practice
+Added a dedicated Flashcard Mode page (`/vocab/flashcards`) — a low-pressure, free-practice complement to the SRS review. Each card uses a CSS 3-D `rotateY` flip animation (front = English word + phonetic + POS; back = Korean meaning + example sentence + Pronounce button). Users can browse all their vocabulary words (or filter to New / Learning / Review / Mastered via URL pills), navigate with Prev/Next buttons or ← → arrow keys, flip with Space, shuffle with S or the Shuffle button, and auto-pronounce on flip via Web Speech API. A progress bar and status badge update on every card; a completion screen at the end offers Go Again, Shuffle & Repeat, or jump to SRS Review. A purple "Flashcard Mode" button was added to the Wordbook header alongside Export CSV and Start Review.
+
 ## 2026-04-11 - [Analytics] 30-Day Learning Activity Heatmap on Stats Page
 Added a GitHub-style contribution heatmap to the Learning Analytics page showing the last 30 days of study activity. Each day is represented as a colour-coded cell (5 intensity levels: none → <15 min → 15–29 min → 30–59 min → 60+ min) arranged in a weekday-aligned grid. A header shows the active-day count and best-day minutes; a colour legend explains the intensity scale; tooltip titles reveal the exact date and minutes per cell; and today is highlighted with a blue ring. The backend adds a single efficient `SUM(watched_sec) GROUP BY date` query over the last 30 days in the `/stats` route — no schema changes required.
 

@@ -115,6 +115,47 @@ def review():
     
     return render_template('vocabulary/review.html', words=due_words, count=len(due_words))
 
+@vocab_bp.route('/flashcards')
+@login_required
+def flashcards():
+    """Free-practice flashcard mode — browse all words with a flip-card UI."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('vocab.index'))
+
+    status_filter = request.args.get('filter', 'all')
+    query = UserVocabulary.query.filter_by(profile_id=profile.id)
+    if status_filter in ('new', 'learning', 'review', 'mastered'):
+        query = query.filter_by(status=status_filter)
+
+    words = query.join(UserVocabulary.vocabulary).order_by(UserVocabulary.next_review).all()
+
+    if not words:
+        flash("No words found for this filter. Add some words first!", 'warning')
+        return redirect(url_for('vocab.index'))
+
+    import json as _json
+    cards = []
+    for uw in words:
+        v = uw.vocabulary
+        cards.append({
+            'word': v.word,
+            'phonetic': v.phonetic or '',
+            'pos': v.pos or '',
+            'meaning': v.meaning_ko,
+            'example': v.example_en or '',
+            'status': uw.status,
+        })
+
+    return render_template(
+        'vocabulary/flashcards.html',
+        cards_json=_json.dumps(cards, ensure_ascii=False),
+        total=len(cards),
+        status_filter=status_filter,
+    )
+
+
 @vocab_bp.route('/review/answer/<word_id>', methods=['POST'])
 @login_required
 def submit_answer(word_id):

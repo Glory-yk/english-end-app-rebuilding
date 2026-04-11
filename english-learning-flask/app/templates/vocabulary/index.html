@@ -4,10 +4,14 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">My Personal Wordbook</h1>
-        <div class="flex gap-3">
+        <div class="flex flex-wrap gap-3">
             <a href="{{ url_for('vocab.export_csv') }}"
                class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded border border-gray-300 flex items-center gap-2">
                 &#8659; Export CSV
+            </a>
+            <a href="{{ url_for('vocab.flashcards') }}"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
+                &#x1F0CF; Flashcard Mode
             </a>
             <a href="{{ url_for('vocab.review') }}"
                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
