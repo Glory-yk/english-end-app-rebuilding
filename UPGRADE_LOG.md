@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [UI/UX] "Continue Learning" hero card on dashboard
+Added a "Continue Learning" card to the dashboard that surfaces the user's most recently watched video with its YouTube thumbnail, title, channel name, difficulty badge, "last watched" date, minutes watched, and an inline progress bar (percentage of total duration completed). The entire card is a clickable link to the video detail page with hover effects; a "▶ Resume" overlay badge on the thumbnail and a "Continue Watching →" CTA button reinforce the action. This is the single highest-retention UX feature in any content-learning app — it eliminates the friction of deciding what to watch next. The `sessions` list with `joinedload(LearningSession.video)` was already passed to the template, so zero backend changes were needed.
+
 ## 2026-04-11 - [UI/UX] Add Video loading overlay with animated progress steps
 Added a full-page loading overlay to the Add Video form (`/video/add`) that activates on submit. Shows a dual-ring spinner, a cycling progress label ("Connecting to YouTube…" → "Fetching metadata…" → "Downloading subtitles…" → "Restoring punctuation…" → "Indexing words…" → "Almost ready…"), a growing progress bar, and animated step dots — all with realistic time delays matching actual server processing stages. The submit button disables on click and shows a "Processing…" state to prevent double-submit. Client-side URL validation (must contain youtube.com/watch or youtu.be/) surfaces an inline error before the form ever submits. A `pageshow` listener resets the overlay if the user navigates back via the browser back button. No backend or schema changes required.
 
