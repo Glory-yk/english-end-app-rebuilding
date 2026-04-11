@@ -107,6 +107,122 @@
     .streak-flame { display: inline-block; animation: flicker 0.9s ease-in-out infinite; }
 </style>
 
+    <!-- Today's Focus -->
+    {% set tasks_done = (0 if due_count > 0 else 1) + (1 if goal_pct >= 100 else 0) %}
+    <div class="bg-white rounded-xl shadow p-6 mb-10">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <span aria-hidden="true">📋</span> Today's Focus
+            </h2>
+            <span class="text-sm font-semibold px-3 py-1 rounded-full
+                         {% if tasks_done == 2 %}bg-green-100 text-green-700{% else %}bg-blue-50 text-blue-600{% endif %}">
+                {{ tasks_done }}/3 done
+            </span>
+        </div>
+        <div class="space-y-3">
+
+            <!-- Task 1: SRS Review -->
+            <div class="flex items-center gap-3 p-3 rounded-lg border
+                        {% if due_count == 0 %}bg-green-50 border-green-200{% else %}bg-amber-50 border-amber-200{% endif %}">
+                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black
+                            {% if due_count == 0 %}bg-green-500{% else %}bg-amber-500{% endif %}"
+                     aria-hidden="true">
+                    {% if due_count == 0 %}✓{% else %}1{% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-sm
+                              {% if due_count == 0 %}text-green-800{% else %}text-amber-800{% endif %}">
+                        {% if due_count == 0 %}
+                            All vocabulary reviews done!
+                        {% else %}
+                            Review {{ due_count }} due word{{ 's' if due_count != 1 }}
+                        {% endif %}
+                    </p>
+                    <p class="text-xs mt-0.5
+                              {% if due_count == 0 %}text-green-600{% else %}text-amber-600{% endif %}">
+                        {% if due_count == 0 %}
+                            No pending reviews — you're all caught up.
+                        {% else %}
+                            Spaced repetition keeps words in long-term memory.
+                        {% endif %}
+                    </p>
+                </div>
+                {% if due_count > 0 %}
+                <a href="{{ url_for('vocab.review') }}"
+                   class="shrink-0 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-full transition"
+                   aria-label="Start vocabulary review">
+                    Review →
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Task 2: Daily watch goal -->
+            <div class="flex items-center gap-3 p-3 rounded-lg border
+                        {% if goal_pct >= 100 %}bg-green-50 border-green-200{% else %}bg-blue-50 border-blue-200{% endif %}">
+                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black
+                            {% if goal_pct >= 100 %}bg-green-500{% else %}bg-blue-500{% endif %}"
+                     aria-hidden="true">
+                    {% if goal_pct >= 100 %}✓{% else %}2{% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-sm
+                              {% if goal_pct >= 100 %}text-green-800{% else %}text-blue-800{% endif %}">
+                        {% if goal_pct >= 100 %}
+                            Daily goal reached — {{ today_minutes }} min studied!
+                        {% else %}
+                            Watch {{ goal_min - today_minutes }} more minute{{ 's' if (goal_min - today_minutes) != 1 }}
+                        {% endif %}
+                    </p>
+                    <p class="text-xs mt-0.5
+                              {% if goal_pct >= 100 %}text-green-600{% else %}text-blue-600{% endif %}">
+                        {% if goal_pct >= 100 %}
+                            Great work — your streak is safe for today!
+                        {% else %}
+                            {{ today_minutes }} of {{ goal_min }} min done — {{ goal_pct }}% of your daily goal.
+                        {% endif %}
+                    </p>
+                </div>
+                {% if goal_pct < 100 %}
+                <a href="{{ url_for('video.index') }}"
+                   class="shrink-0 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full transition"
+                   aria-label="Browse videos to study">
+                    Watch →
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Task 3: Quiz / vocabulary boost -->
+            <div class="flex items-center gap-3 p-3 rounded-lg border bg-purple-50 border-purple-200">
+                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black bg-purple-500"
+                     aria-hidden="true">3</div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-sm text-purple-800">
+                        {% if word_count >= 4 %}
+                            Test your knowledge with a quiz
+                        {% elif word_count > 0 %}
+                            Save {{ 4 - word_count }} more word{{ 's' if (4 - word_count) != 1 }} to unlock quizzes
+                        {% else %}
+                            Watch a video and save words to unlock quizzes
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-purple-600 mt-0.5">
+                        {% if word_count >= 4 %}
+                            {{ word_count }} word{{ 's' if word_count != 1 }} in your wordbook — try Rapid Fire for a challenge!
+                        {% else %}
+                            Tap words in the subtitle panel while watching to save them.
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{{ url_for('quiz.index') if word_count >= 4 else url_for('video.index') }}"
+                   class="shrink-0 text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-full transition"
+                   aria-label="{{ 'Go to Quiz Hub' if word_count >= 4 else 'Browse videos' }}">
+                    {{ 'Quiz →' if word_count >= 4 else 'Watch →' }}
+                </a>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Word of the Day -->
     {% if word_of_day %}
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 mb-10 text-white">

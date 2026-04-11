@@ -97,6 +97,9 @@ def index():
         # Consecutive-day learning streak
         streak_days = _calculate_streak(profile.id)
 
+        # Total vocabulary count (reuse already-fetched all_words — no extra query)
+        word_count = len(all_words)
+
         return render_template('main/dashboard.html',
                                profile=profile,
                                sessions=recent_sessions,
@@ -107,7 +110,8 @@ def index():
                                avg_quiz_pct=avg_quiz_pct,
                                due_count=due_count,
                                word_of_day=word_of_day,
-                               streak_days=streak_days)
+                               streak_days=streak_days,
+                               word_count=word_count)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
