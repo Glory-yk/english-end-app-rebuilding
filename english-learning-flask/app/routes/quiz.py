@@ -510,3 +510,88 @@ def hard_words():
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
     )
+
+
+@quiz_bp.route('/vocab-by-video/<video_id>')
+@login_required
+def vocab_by_video(video_id):
+    """Vocabulary quiz focused on words the user saved from a specific video.
+
+    Uses words saved from that video as the primary question pool; supplements
+    with random wordbook words if fewer than 4 video-specific words exist.
+    Falls back to an informative flash + redirect if no video words are saved.
+    """
+    from app.models.video import Video as VideoModel
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    video = VideoModel.query.get_or_404(video_id)
+
+    # Full wordbook — needed for distractor pool and potential supplement
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to take a quiz.", 'warning')
+        return redirect(url_for('video.detail', video_id=video_id))
+
+    # Words saved specifically from this video
+    video_words = [uv for uv in all_words if uv.source_video == video_id]
+
+    if not video_words:
+        flash(
+            "No words saved from this video yet. "
+            "Tap words in the subtitle panel while watching to save them!",
+            'warning',
+        )
+        return redirect(url_for('video.detail', video_id=video_id))
+
+    # Supplement with random words from the full wordbook if fewer than 4
+    question_pool = list(video_words)
+    if len(question_pool) < 4:
+        video_word_ids = {uv.id for uv in question_pool}
+        extras = [uv for uv in all_words if uv.id not in video_word_ids]
+        needed = 4 - len(question_pool)
+        if extras:
+            question_pool += random.sample(extras, min(needed, len(extras)))
+
+    sample_size = min(10, len(question_pool))
+    selected = random.sample(question_pool, sample_size)
+    all_meanings = [uv.vocabulary.meaning_ko for uv in all_words]
+
+    questions = []
+    for uw in selected:
+        correct = uw.vocabulary.meaning_ko
+        distractor_pool = [m for m in all_meanings if m != correct]
+        if len(distractor_pool) < 3:
+            continue
+        distractors = random.sample(distractor_pool, 3)
+        options = distractors + [correct]
+        random.shuffle(options)
+        questions.append({
+            'word': uw.vocabulary.word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'correct': correct,
+            'options': options,
+            'from_this_video': uw.source_video == video_id,
+        })
+
+    if not questions:
+        flash("Not enough vocabulary to build a quiz. Save more words from this video!", 'warning')
+        return redirect(url_for('video.detail', video_id=video_id))
+
+    return render_template(
+        'quiz/vocab_challenge.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+        video_title=video.title,
+        video_id=video_id,
+    )

@@ -148,7 +148,15 @@
                 <!-- Words saved from this video -->
                 <div id="video-words-panel"
                      class="{% if not video_saved_words %}hidden{% endif %} shrink-0 border-t border-gray-100 p-3 bg-gray-50 rounded-b-lg">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Saved from this video</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">Saved from this video</p>
+                        <a href="{{ url_for('quiz.vocab_by_video', video_id=video.id) }}"
+                           id="video-quiz-btn"
+                           class="{% if not video_saved_words %}hidden{% endif %} text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full transition whitespace-nowrap"
+                           title="Quiz yourself on words saved from this video">
+                            📝 Quiz these words →
+                        </a>
+                    </div>
                     <div id="video-word-chips" class="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                         {% for uv in video_saved_words %}
                         <a href="{{ url_for('vocab.word_detail', word_id=uv.id) }}"
@@ -419,7 +427,9 @@
                 // Add a chip to the "Saved from this video" panel
                 const panel = document.getElementById('video-words-panel');
                 const chips = document.getElementById('video-word-chips');
+                const quizBtn = document.getElementById('video-quiz-btn');
                 if (panel) panel.classList.remove('hidden');
+                if (quizBtn) quizBtn.classList.remove('hidden');
                 if (chips) {
                     const chip = document.createElement('span');
                     chip.className = 'inline-block bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded-full';
