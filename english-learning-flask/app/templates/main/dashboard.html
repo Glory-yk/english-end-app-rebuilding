@@ -183,8 +183,10 @@
             <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <span aria-hidden="true">📋</span> Today's Focus
             </h2>
-            <span class="text-sm font-semibold px-3 py-1 rounded-full
-                         {% if tasks_done == 2 %}bg-green-100 text-green-700{% else %}bg-blue-50 text-blue-600{% endif %}">
+            <span id="tasks-done-badge"
+                  class="text-sm font-semibold px-3 py-1 rounded-full
+                         {% if tasks_done == 2 %}bg-green-100 text-green-700{% else %}bg-blue-50 text-blue-600{% endif %}"
+                  data-server-done="{{ tasks_done }}">
                 {{ tasks_done }}/3 done
             </span>
         </div>
@@ -261,11 +263,13 @@
             </div>
 
             <!-- Task 3: Quiz / vocabulary boost -->
-            <div class="flex items-center gap-3 p-3 rounded-lg border bg-purple-50 border-purple-200">
-                <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black bg-purple-500"
+            <div id="task3-row"
+                 class="flex items-center gap-3 p-3 rounded-lg border bg-purple-50 border-purple-200">
+                <div id="task3-icon"
+                     class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black bg-purple-500"
                      aria-hidden="true">3</div>
                 <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-sm text-purple-800">
+                    <p id="task3-title" class="font-semibold text-sm text-purple-800">
                         {% if word_count >= 4 %}
                             Test your knowledge with a quiz
                         {% elif word_count > 0 %}
@@ -274,7 +278,7 @@
                             Watch a video and save words to unlock quizzes
                         {% endif %}
                     </p>
-                    <p class="text-xs text-purple-600 mt-0.5">
+                    <p id="task3-desc" class="text-xs text-purple-600 mt-0.5">
                         {% if word_count >= 4 %}
                             {{ word_count }} word{{ 's' if word_count != 1 }} in your wordbook — try Rapid Fire for a challenge!
                         {% else %}
@@ -282,7 +286,8 @@
                         {% endif %}
                     </p>
                 </div>
-                <a href="{{ url_for('quiz.index') if word_count >= 4 else url_for('video.index') }}"
+                <a id="task3-cta"
+                   href="{{ url_for('quiz.index') if word_count >= 4 else url_for('video.index') }}"
                    class="shrink-0 text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-full transition"
                    aria-label="{{ 'Go to Quiz Hub' if word_count >= 4 else 'Browse videos' }}">
                     {{ 'Quiz →' if word_count >= 4 else 'Watch →' }}
@@ -377,4 +382,76 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Detect whether the user completed any quiz today and, if so, mark
+// task 3 in the "Today's Focus" checklist as done.
+(function () {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Check regular quiz history (englearn_quiz_history)
+        const hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+        const didQuizToday = hist.some(function (r) {
+            return new Date(r.ts).toISOString().slice(0, 10) === today;
+        });
+
+        // Also check Daily Challenge completion (englearn_daily_YYYY-MM-DD)
+        const didDailyToday = !!localStorage.getItem('englearn_daily_' + today);
+
+        if (!didQuizToday && !didDailyToday) return;
+
+        // --- Update task 3 row to "done" (green) state ---
+        var row  = document.getElementById('task3-row');
+        var icon = document.getElementById('task3-icon');
+        var title = document.getElementById('task3-title');
+        var desc  = document.getElementById('task3-desc');
+        var cta   = document.getElementById('task3-cta');
+
+        if (row) {
+            row.className = row.className
+                .replace('bg-purple-50', 'bg-green-50')
+                .replace('border-purple-200', 'border-green-200');
+        }
+        if (icon) {
+            icon.textContent = '✓';
+            icon.className = icon.className
+                .replace('bg-purple-500', 'bg-green-500');
+        }
+        if (title) {
+            title.textContent = "Quiz done — great work!";
+            title.className = title.className
+                .replace('text-purple-800', 'text-green-800');
+        }
+        if (desc) {
+            // Show which quiz type was completed, if available
+            var lastType = didQuizToday && hist[0] && new Date(hist[0].ts).toISOString().slice(0, 10) === today
+                ? hist[0].type : 'Daily Challenge';
+            desc.textContent = lastType + " completed today.";
+            desc.className = desc.className
+                .replace('text-purple-600', 'text-green-600');
+        }
+        if (cta) {
+            cta.textContent = 'Play Again →';
+            cta.className = cta.className
+                .replace('bg-purple-500', 'bg-green-500')
+                .replace('hover:bg-purple-600', 'hover:bg-green-600');
+            cta.href = "{{ url_for('quiz.index') }}";
+        }
+
+        // --- Update the "N/3 done" badge to N+1/3 ---
+        var badge = document.getElementById('tasks-done-badge');
+        if (badge) {
+            var serverDone = parseInt(badge.dataset.serverDone || '0', 10);
+            var newDone = Math.min(serverDone + 1, 3);
+            badge.textContent = newDone + '/3 done';
+            if (newDone === 3) {
+                badge.className = badge.className
+                    .replace('bg-blue-50', 'bg-green-100')
+                    .replace('text-blue-600', 'text-green-700');
+            }
+        }
+    } catch (e) {}
+})();
+</script>
 {% endblock %}
