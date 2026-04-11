@@ -340,3 +340,41 @@ def rapid_fire():
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
     )
+
+
+@quiz_bp.route('/word-match')
+@login_required
+def word_match():
+    """Word Match: click matching English–Korean pairs to clear the board."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to play Word Match.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # 6 pairs gives a snappy 12-card board; cap at available words
+    sample_size = min(6, len(all_words))
+    selected = random.sample(all_words, sample_size)
+
+    pairs = []
+    for uw in selected:
+        pairs.append({
+            'word': uw.vocabulary.word,
+            'meaning': uw.vocabulary.meaning_ko,
+        })
+
+    return render_template(
+        'quiz/word_match.html',
+        pairs_json=json.dumps(pairs, ensure_ascii=False),
+        total=len(pairs),
+    )

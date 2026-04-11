@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                <span aria-hidden="true">🔗</span> Word Match
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">Select an English word, then tap its Korean meaning.</p>
+        </div>
+        <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm font-medium">← Quiz Hub</a>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud"
+         role="status" aria-live="polite" aria-atomic="true"
+         class="flex justify-between items-center bg-white rounded-xl shadow p-3 mb-6 text-sm font-semibold text-gray-600">
+        <div>⏱ <span id="timer" aria-label="elapsed time">0:00</span></div>
+        <div id="pair-counter" aria-label="pairs matched">0 / {{ total }} pairs</div>
+        <div>❌ <span id="error-count" aria-label="errors">0</span> errors</div>
+    </div>
+
+    <!-- Game board -->
+    <div id="game-board" class="grid grid-cols-2 gap-4">
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 text-center"
+               id="eng-col-label">English</p>
+            <div id="english-col"
+                 role="group" aria-labelledby="eng-col-label"
+                 class="flex flex-col gap-3"></div>
+        </div>
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 text-center"
+               id="kor-col-label">Korean</p>
+            <div id="korean-col"
+                 role="group" aria-labelledby="kor-col-label"
+                 class="flex flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <!-- Results screen -->
+    <div id="results" class="hidden text-center py-10">
+        <div class="text-6xl mb-4" id="result-emoji" aria-hidden="true">🎉</div>
+        <h2 class="text-3xl font-black text-gray-900 mb-2">All Matched!</h2>
+        <p class="text-gray-500 mb-6 text-lg" id="result-summary"></p>
+        <div id="perfect-badge" class="hidden mb-6">
+            <span class="inline-block bg-yellow-100 text-yellow-800 font-black px-5 py-2 rounded-full text-lg border-2 border-yellow-300">
+                🏆 Perfect Game — zero errors!
+            </span>
+        </div>
+        <div class="flex flex-wrap justify-center gap-3">
+            <a href="{{ url_for('quiz.word_match') }}"
+               class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-full transition shadow-md">
+                Play Again
+            </a>
+            <a href="{{ url_for('quiz.index') }}"
+               class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-full transition">
+                Quiz Hub
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .match-btn {
+        transition: all 0.15s ease;
+        user-select: none;
+        cursor: pointer;
+    }
+    .match-btn:focus-visible {
+        outline: 3px solid #7c3aed;
+        outline-offset: 2px;
+    }
+    .match-btn.selected {
+        border-color: #7c3aed !important;
+        background-color: #f5f3ff !important;
+        color: #5b21b6 !important;
+        transform: scale(1.03);
+        box-shadow: 0 0 0 3px rgba(124,58,237,0.25);
+    }
+    .match-btn.matched {
+        background-color: #dcfce7 !important;
+        color: #166534 !important;
+        border-color: #86efac !important;
+        cursor: default;
+        pointer-events: none;
+        opacity: 0.8;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%       { transform: translateX(-7px); }
+        40%       { transform: translateX(7px); }
+        60%       { transform: translateX(-4px); }
+        80%       { transform: translateX(4px); }
+    }
+    .match-btn.wrong {
+        animation: shake 0.35s ease;
+        background-color: #fee2e2 !important;
+        border-color: #fca5a5 !important;
+        color: #991b1b !important;
+        pointer-events: none;
+    }
+    @keyframes pop-in {
+        from { opacity: 0; transform: scale(0.9); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+    #results { animation: pop-in 0.4s ease; }
+</style>
+
+<script>
+(function () {
+    'use strict';
+
+    const PAIRS = {{ pairs_json | safe }};
+    const TOTAL = PAIRS.length;
+
+    // Build shuffled column arrays
+    function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    const engItems = shuffle(PAIRS.map((p, i) => ({ id: i, text: p.word })));
+    const korItems = shuffle(PAIRS.map((p, i) => ({ id: i, text: p.meaning })));
+
+    // State
+    let selectedEngBtn = null;
+    let selectedEngId  = null;
+    let matchedCount   = 0;
+    let errorCount     = 0;
+    let startTime      = null;
+    let timerInterval  = null;
+    let locked         = false;
+
+    // Build buttons
+    function buildCol(items, colId, onClickFn) {
+        const col = document.getElementById(colId);
+        items.forEach(function (item) {
+            const btn = document.createElement('button');
+            btn.id = colId + '-' + item.id;
+            btn.dataset.pairId = item.id;
+            btn.textContent = item.text;
+            btn.setAttribute('aria-label', item.text);
+            btn.className = [
+                'match-btn w-full border-2 border-gray-200 bg-white',
+                'text-gray-800 font-semibold px-4 py-3 rounded-xl text-sm',
+                'hover:border-violet-300 hover:bg-violet-50',
+            ].join(' ');
+            btn.addEventListener('click', function () { onClickFn(btn, item.id); });
+            col.appendChild(btn);
+        });
+    }
+
+    // Timer helpers
+    function startTimer() {
+        startTime = Date.now();
+        timerInterval = setInterval(function () {
+            var sec = Math.floor((Date.now() - startTime) / 1000);
+            var m = Math.floor(sec / 60);
+            var s = String(sec % 60).padStart(2, '0');
+            document.getElementById('timer').textContent = m + ':' + s;
+        }, 500);
+    }
+
+    function elapsedSeconds() {
+        return startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+    }
+
+    // Pair-counter update
+    function updateCounter() {
+        document.getElementById('pair-counter').textContent =
+            matchedCount + ' / ' + TOTAL + ' pairs';
+    }
+
+    // English column click handler
+    function onEngClick(btn, id) {
+        if (locked || btn.classList.contains('matched')) return;
+
+        // Tap same button again → deselect
+        if (selectedEngId === id) {
+            btn.classList.remove('selected');
+            btn.setAttribute('aria-pressed', 'false');
+            selectedEngBtn = null;
+            selectedEngId  = null;
+            return;
+        }
+
+        // Deselect previous English button
+        if (selectedEngBtn) {
+            selectedEngBtn.classList.remove('selected');
+            selectedEngBtn.setAttribute('aria-pressed', 'false');
+        }
+
+        selectedEngBtn = btn;
+        selectedEngId  = id;
+        btn.classList.add('selected');
+        btn.setAttribute('aria-pressed', 'true');
+
+        if (!startTime) startTimer();
+    }
+
+    // Korean column click handler
+    function onKorClick(btn, id) {
+        if (locked || btn.classList.contains('matched')) return;
+        // Need an English word selected first
+        if (selectedEngBtn === null) return;
+        if (!startTime) startTimer();
+
+        locked = true;
+
+        if (selectedEngId === id) {
+            // ✅ Correct match
+            selectedEngBtn.classList.remove('selected');
+            selectedEngBtn.setAttribute('aria-pressed', 'false');
+            selectedEngBtn.classList.add('matched');
+            selectedEngBtn.setAttribute('aria-label', selectedEngBtn.textContent + ' — matched');
+            btn.classList.add('matched');
+            btn.setAttribute('aria-label', btn.textContent + ' — matched');
+
+            matchedCount++;
+            updateCounter();
+
+            selectedEngBtn = null;
+            selectedEngId  = null;
+            locked = false;
+
+            if (matchedCount === TOTAL) finishGame();
+        } else {
+            // ❌ Wrong match
+            errorCount++;
+            document.getElementById('error-count').textContent = errorCount;
+
+            var engBtn = selectedEngBtn;
+            engBtn.classList.add('wrong');
+            btn.classList.add('wrong');
+
+            setTimeout(function () {
+                engBtn.classList.remove('wrong', 'selected');
+                engBtn.setAttribute('aria-pressed', 'false');
+                btn.classList.remove('wrong');
+                selectedEngBtn = null;
+                selectedEngId  = null;
+                locked = false;
+            }, 500);
+        }
+    }
+
+    // Finish / results
+    function finishGame() {
+        clearInterval(timerInterval);
+        var sec = elapsedSeconds();
+        var m   = Math.floor(sec / 60);
+        var s   = sec % 60;
+        var timeStr = m > 0 ? m + 'm ' + s + 's' : s + 's';
+
+        // Save to quiz history using vocab_challenge-style helper
+        var pct = Math.round((TOTAL / Math.max(TOTAL + errorCount, TOTAL)) * 100);
+        // Penalise errors slightly in the percentage: score = TOTAL, total = TOTAL + errorCount
+        var histScore = TOTAL;
+        var histTotal = TOTAL + errorCount;
+        saveQuizResult('Word Match', '🔗', histScore, histTotal);
+
+        // Populate results
+        document.getElementById('result-emoji').textContent =
+            errorCount === 0 ? '🏆' : '🎉';
+        document.getElementById('result-summary').textContent =
+            'Matched all ' + TOTAL + ' pairs in ' + timeStr +
+            ' with ' + errorCount + ' error' + (errorCount !== 1 ? 's' : '') + '.';
+        if (errorCount === 0) {
+            document.getElementById('perfect-badge').classList.remove('hidden');
+        }
+
+        setTimeout(function () {
+            document.getElementById('game-board').classList.add('hidden');
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+        }, 600);
+    }
+
+    function saveQuizResult(type, icon, score, total) {
+        try {
+            var pct  = total > 0 ? Math.round(score / total * 100) : 0;
+            var hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+            hist.unshift({ type: type, icon: icon, score: score, total: total, pct: pct, ts: Date.now() });
+            if (hist.length > 20) hist.splice(20);
+            localStorage.setItem('englearn_quiz_history', JSON.stringify(hist));
+        } catch (e) {}
+    }
+
+    // Keyboard: Escape deselects current English word
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && selectedEngBtn) {
+            selectedEngBtn.classList.remove('selected');
+            selectedEngBtn.setAttribute('aria-pressed', 'false');
+            selectedEngBtn = null;
+            selectedEngId  = null;
+        }
+    });
+
+    // Initialise
+    buildCol(engItems, 'english-col', onEngClick);
+    buildCol(korItems, 'korean-col', onKorClick);
+    updateCounter();
+}());
+</script>
+{% endblock %}
