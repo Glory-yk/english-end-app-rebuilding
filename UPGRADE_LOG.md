@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-11 - [Quiz] Spelling Bee — type the English word from its Korean meaning
+Added a 4th quiz mode to the Quiz Hub: Spelling Bee (`/quiz/spelling-bee`). The server samples up to 10 words from the user's personal wordbook and for each one shows its Korean meaning, POS badge, phonetic, a first-letter hint, and the word length. The user types the full English spelling in a free-text input (no multiple-choice safety net). Correct answers auto-pronounce via Web Speech API; wrong/skipped answers reveal the correct word and example sentence. Keyboard shortcuts (Enter=check, Tab=skip, →/Enter=next, R=pronounce), a running score counter, a missed-words review list on the results screen, and localStorage score history integration complete the feature. A pink/rose gradient card was added as the 4th card on the Quiz Hub index.
+
 ## 2026-04-10 23:30 - [UI/UX] Live search, difficulty filter, watched badges on Video Library
 Replaced the plain video grid with a fully interactive Video Library: a live-search bar filters cards by title or channel name; four difficulty pills (All / Easy / Medium / Hard) and a "✓ Watched" pill filter by `video.difficulty` and whether the current user has a `LearningSession` for that video. Each card gains an inline duration badge, a colour-coded difficulty badge (green/yellow/red), and a "✓ Watched" indigo badge for previously watched videos, plus quick-access Listening Mode and Grammar Pattern buttons on watched cards. An improved empty-library state links to both Add Video and the sample video. All filtering is client-side; the only backend change is a single distinct query of `LearningSession.video_id` for the current profile added to the `index` route.
 

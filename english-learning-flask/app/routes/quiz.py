@@ -248,3 +248,46 @@ def cloze():
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
     )
+
+
+@quiz_bp.route('/spelling-bee')
+@login_required
+def spelling_bee():
+    """Spelling Bee: see the Korean meaning and type the correct English spelling."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to play Spelling Bee.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    sample_size = min(10, len(all_words))
+    question_words = random.sample(all_words, sample_size)
+
+    questions = []
+    for uw in question_words:
+        w = uw.vocabulary.word
+        questions.append({
+            'word': w,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'meaning': uw.vocabulary.meaning_ko,
+            'example': uw.vocabulary.example_en or '',
+            'first_letter': w[0].upper(),
+            'length': len(w),
+        })
+
+    return render_template(
+        'quiz/spelling_bee.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+    )

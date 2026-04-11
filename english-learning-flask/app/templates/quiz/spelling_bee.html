@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h1 class="text-2xl font-black flex items-center gap-2">🐝 Spelling Bee</h1>
+            <p class="text-gray-500 text-sm mt-1">Read the Korean meaning and type the correct English spelling.</p>
+        </div>
+        <a href="{{ url_for('quiz.index') }}" class="text-sm text-gray-400 hover:text-gray-600 transition">← Back</a>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="bg-gray-200 rounded-full h-2 mb-8">
+        <div id="progress-bar" class="bg-rose-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+
+    <!-- Quiz area -->
+    <div id="quiz-area">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-4">
+            <!-- Counter -->
+            <p id="question-counter" class="text-sm font-bold text-gray-400 uppercase tracking-wide mb-6 text-center"></p>
+
+            <!-- Korean meaning (the "clue") -->
+            <div class="text-center mb-6">
+                <div class="mb-3">
+                    <span id="pos-badge" class="hidden text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700"></span>
+                </div>
+                <p class="text-2xl font-black text-gray-800 leading-snug" id="meaning-ko"></p>
+                <p id="phonetic-hint" class="text-gray-400 text-sm italic mt-2 hidden"></p>
+            </div>
+
+            <!-- Letter hint box -->
+            <div class="bg-rose-50 border border-rose-100 rounded-xl py-4 px-6 text-center mb-6">
+                <p class="text-xs text-rose-400 font-bold uppercase tracking-wide mb-2">First letter</p>
+                <p id="letter-hint" class="font-mono text-3xl font-black tracking-[0.3em] text-rose-600"></p>
+                <p id="word-length-hint" class="text-xs text-rose-300 mt-1"></p>
+            </div>
+
+            <!-- Input area -->
+            <div id="input-area">
+                <input id="answer-input"
+                       type="text"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false"
+                       class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-xl font-mono text-center focus:outline-none focus:border-rose-400 transition"
+                       placeholder="Type the English word…">
+                <div class="flex gap-3 mt-4">
+                    <button id="check-btn"
+                            class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-black py-3 px-6 rounded-xl transition text-lg shadow">
+                        Check ↵
+                    </button>
+                    <button id="skip-btn"
+                            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition text-sm font-bold">
+                        Skip
+                    </button>
+                </div>
+                <p class="text-center text-xs text-gray-400 mt-3">
+                    <kbd class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">Enter</kbd> check &nbsp;
+                    <kbd class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">Tab</kbd> skip
+                </p>
+            </div>
+
+            <!-- Result area (hidden until answer submitted) -->
+            <div id="result-area" class="hidden">
+                <div id="result-banner" class="text-center py-4 px-6 rounded-xl mb-5 text-lg font-black"></div>
+
+                <div class="text-center mb-4">
+                    <p class="text-3xl font-black text-gray-900 mb-1" id="result-word"></p>
+                    <p id="result-phonetic" class="text-gray-400 italic text-sm mb-3 hidden"></p>
+                    <button id="pronounce-btn"
+                            class="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold py-2 px-5 rounded-lg transition text-sm">
+                        🔊 Pronounce
+                    </button>
+                </div>
+
+                <p id="result-example"
+                   class="text-gray-600 text-sm italic border-l-4 border-gray-200 pl-3 mt-4 hidden"></p>
+
+                <button id="next-btn"
+                        class="w-full mt-6 bg-gray-900 hover:bg-gray-700 text-white font-black py-3 px-6 rounded-xl transition text-lg">
+                    Next →
+                </button>
+                <p class="text-center text-xs text-gray-400 mt-2">
+                    <kbd class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">Enter</kbd> / <kbd class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">→</kbd> next &nbsp;
+                    <kbd class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">R</kbd> pronounce
+                </p>
+            </div>
+        </div>
+
+        <!-- Running score -->
+        <p class="text-center text-sm text-gray-400">
+            Score: <span id="running-score" class="font-bold text-gray-700">0</span> / <span id="running-total">0</span>
+        </p>
+    </div>
+
+    <!-- Results screen -->
+    <div id="results-screen" class="hidden">
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div class="text-6xl mb-4" id="results-emoji"></div>
+            <h2 class="text-2xl font-black mb-2">Spelling Bee Complete!</h2>
+            <p class="text-gray-500 mb-6">
+                You spelled
+                <span id="results-score" class="font-black text-rose-600"></span>
+                words correctly out of {{ total }}.
+            </p>
+
+            <!-- Big percentage -->
+            <div class="bg-rose-50 rounded-2xl p-6 mb-6">
+                <p class="text-6xl font-black text-rose-500 mb-1" id="results-pct"></p>
+                <p class="text-gray-400 text-sm">accuracy</p>
+            </div>
+
+            <!-- Missed words -->
+            <div id="missed-section" class="hidden text-left mb-6">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Words to practise more:</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="flex gap-4">
+                <a href="{{ url_for('quiz.spelling_bee') }}"
+                   class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl transition text-center">
+                    Try Again
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black py-3 rounded-xl transition text-center">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var QUESTIONS = {{ questions_json|safe }};
+    var TOTAL     = {{ total }};
+
+    var idx   = 0;
+    var score = 0;
+    var missed = [];
+
+    // DOM refs
+    var progressBar     = document.getElementById('progress-bar');
+    var counter         = document.getElementById('question-counter');
+    var posBadge        = document.getElementById('pos-badge');
+    var meaningEl       = document.getElementById('meaning-ko');
+    var phoneticHint    = document.getElementById('phonetic-hint');
+    var letterHint      = document.getElementById('letter-hint');
+    var wordLengthHint  = document.getElementById('word-length-hint');
+    var answerInput     = document.getElementById('answer-input');
+    var checkBtn        = document.getElementById('check-btn');
+    var skipBtn         = document.getElementById('skip-btn');
+    var inputArea       = document.getElementById('input-area');
+    var resultArea      = document.getElementById('result-area');
+    var resultBanner    = document.getElementById('result-banner');
+    var resultWord      = document.getElementById('result-word');
+    var resultPhonetic  = document.getElementById('result-phonetic');
+    var resultExample   = document.getElementById('result-example');
+    var pronounceBtn    = document.getElementById('pronounce-btn');
+    var nextBtn         = document.getElementById('next-btn');
+    var runningScore    = document.getElementById('running-score');
+    var runningTotal    = document.getElementById('running-total');
+    var quizArea        = document.getElementById('quiz-area');
+    var resultsScreen   = document.getElementById('results-screen');
+
+    function updateRunning() {
+        runningScore.textContent = score;
+        runningTotal.textContent = idx;
+    }
+
+    function renderQuestion() {
+        if (idx >= TOTAL) { showResults(); return; }
+        var q = QUESTIONS[idx];
+        progressBar.style.width = (idx / TOTAL * 100) + '%';
+        counter.textContent = 'Question ' + (idx + 1) + ' of ' + TOTAL;
+
+        if (q.pos) {
+            posBadge.textContent = q.pos;
+            posBadge.classList.remove('hidden');
+        } else {
+            posBadge.classList.add('hidden');
+        }
+        meaningEl.textContent = q.meaning;
+
+        if (q.phonetic) {
+            phoneticHint.textContent = q.phonetic;
+            phoneticHint.classList.remove('hidden');
+        } else {
+            phoneticHint.classList.add('hidden');
+        }
+
+        // Build hint: first letter + underscores for remaining chars
+        var hintParts = [q.first_letter];
+        for (var i = 1; i < q.length; i++) { hintParts.push('_'); }
+        letterHint.textContent = hintParts.join(' ');
+        wordLengthHint.textContent = q.length + ' letter' + (q.length !== 1 ? 's' : '');
+
+        answerInput.value = '';
+        inputArea.classList.remove('hidden');
+        resultArea.classList.add('hidden');
+        answerInput.focus();
+    }
+
+    function pronounceWord(word) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            var utt = new SpeechSynthesisUtterance(word);
+            utt.lang = 'en-US';
+            utt.rate = 0.85;
+            window.speechSynthesis.speak(utt);
+        }
+    }
+
+    function checkAnswer(skipped) {
+        var q = QUESTIONS[idx];
+        var userAnswer = answerInput.value.trim().toLowerCase();
+        var correct    = q.word.toLowerCase();
+        var isCorrect  = !skipped && userAnswer === correct;
+
+        if (isCorrect) {
+            score++;
+            resultBanner.className = 'text-center py-4 px-6 rounded-xl mb-5 text-lg font-black bg-green-100 text-green-700';
+            resultBanner.textContent = '✓ Correct! Well spelled!';
+            pronounceWord(q.word);
+        } else if (skipped) {
+            resultBanner.className = 'text-center py-4 px-6 rounded-xl mb-5 text-lg font-black bg-gray-100 text-gray-600';
+            resultBanner.textContent = '⏭ Skipped — the correct spelling was:';
+            missed.push(q);
+        } else {
+            var displayed = userAnswer ? '"' + userAnswer + '"' : '(nothing)';
+            resultBanner.className = 'text-center py-4 px-6 rounded-xl mb-5 text-lg font-black bg-red-100 text-red-700';
+            resultBanner.textContent = '✗ You typed ' + displayed + ' — correct spelling:';
+            missed.push(q);
+        }
+
+        resultWord.textContent = q.word;
+
+        if (q.phonetic) {
+            resultPhonetic.textContent = q.phonetic;
+            resultPhonetic.classList.remove('hidden');
+        } else {
+            resultPhonetic.classList.add('hidden');
+        }
+
+        if (q.example) {
+            resultExample.textContent = '"' + q.example + '"';
+            resultExample.classList.remove('hidden');
+        } else {
+            resultExample.classList.add('hidden');
+        }
+
+        inputArea.classList.add('hidden');
+        resultArea.classList.remove('hidden');
+    }
+
+    function saveQuizResult() {
+        var pct = TOTAL > 0 ? Math.round(score / TOTAL * 100) : 0;
+        try {
+            var history = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+            history.unshift({ type: 'Spelling Bee', icon: '🐝', score: score, total: TOTAL, pct: pct, ts: Date.now() });
+            localStorage.setItem('englearn_quiz_history', JSON.stringify(history.slice(0, 20)));
+        } catch (e) {}
+    }
+
+    function showResults() {
+        progressBar.style.width = '100%';
+        quizArea.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+
+        var pct = TOTAL > 0 ? Math.round(score / TOTAL * 100) : 0;
+        document.getElementById('results-emoji').textContent = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '💪';
+        document.getElementById('results-score').textContent = score + ' / ' + TOTAL;
+        document.getElementById('results-pct').textContent = pct + '%';
+
+        saveQuizResult();
+
+        if (missed.length > 0) {
+            document.getElementById('missed-section').classList.remove('hidden');
+            var list = document.getElementById('missed-list');
+            missed.forEach(function (q) {
+                var li = document.createElement('li');
+                li.className = 'bg-red-50 border border-red-100 rounded-lg px-4 py-3 flex items-center justify-between gap-4';
+                li.innerHTML =
+                    '<span class="font-bold text-gray-900">' + q.word + '</span>' +
+                    '<span class="text-gray-500 text-sm text-right">' + q.meaning + '</span>';
+                list.appendChild(li);
+            });
+        }
+    }
+
+    // Event listeners
+    checkBtn.addEventListener('click', function () { checkAnswer(false); });
+    skipBtn.addEventListener('click',  function () { checkAnswer(true); });
+    nextBtn.addEventListener('click',  function () { idx++; updateRunning(); renderQuestion(); });
+    pronounceBtn.addEventListener('click', function () {
+        var q = QUESTIONS[idx];
+        if (q) pronounceWord(q.word);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        var q = QUESTIONS[idx];
+        // Input field shortcuts
+        if (document.activeElement === answerInput) {
+            if (e.key === 'Enter') { e.preventDefault(); checkAnswer(false); }
+            if (e.key === 'Tab')   { e.preventDefault(); checkAnswer(true); }
+            return;
+        }
+        // Result-screen shortcuts (result visible, input hidden)
+        if (!resultArea.classList.contains('hidden')) {
+            if (e.key === 'Enter' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                idx++;
+                updateRunning();
+                renderQuestion();
+            }
+            if ((e.key === 'r' || e.key === 'R') && q) {
+                pronounceWord(q.word);
+            }
+        }
+    });
+
+    // Kick off
+    renderQuestion();
+}());
+</script>
+{% endblock %}
