@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+
+    <!-- Back link -->
+    <a href="{{ url_for('vocab.index') }}"
+       class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium mb-6 transition">
+        &#8592; Back to Wordbook
+    </a>
+
+    <!-- ── Word Header Card ────────────────────────────────────────────── -->
+    <div class="bg-white rounded-2xl shadow-lg p-7 mb-6 border-l-4
+        {% if user_word.status == 'mastered' %}border-green-500
+        {% elif user_word.status == 'review' %}border-yellow-500
+        {% elif user_word.status == 'learning' %}border-blue-500
+        {% else %}border-gray-400{% endif %}">
+
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <!-- Word + pronounce -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="text-4xl font-black text-gray-900 break-all">{{ vocab.word }}</h1>
+                    <button onclick="pronounce('{{ vocab.word }}')"
+                            class="text-blue-500 hover:text-blue-700 transition text-2xl"
+                            title="Pronounce" aria-label="Pronounce {{ vocab.word }}">
+                        &#x1F50A;
+                    </button>
+                </div>
+
+                <!-- Phonetic + POS -->
+                <div class="flex items-center gap-3 mt-2 flex-wrap">
+                    {% if vocab.phonetic %}
+                    <span class="text-gray-400 text-base font-mono">{{ vocab.phonetic }}</span>
+                    {% endif %}
+                    {% if vocab.pos %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
+                        {{ vocab.pos }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Korean meaning -->
+                <p class="mt-4 text-2xl font-semibold text-gray-800">{{ vocab.meaning_ko }}</p>
+
+                <!-- Example sentence -->
+                {% if vocab.example_en %}
+                <div class="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <p class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-1">Example</p>
+                    <p class="text-gray-700 italic leading-relaxed">{{ vocab.example_en }}</p>
+                    {% if vocab.example_ko %}
+                    <p class="text-gray-400 text-sm mt-1">{{ vocab.example_ko }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Status badge -->
+            <div class="shrink-0 text-center sm:text-right">
+                <span class="inline-block px-4 py-2 rounded-full text-sm font-bold
+                    {% if user_word.status == 'mastered' %}bg-green-100 text-green-700
+                    {% elif user_word.status == 'review' %}bg-yellow-100 text-yellow-700
+                    {% elif user_word.status == 'learning' %}bg-blue-100 text-blue-700
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {{ user_word.status | capitalize }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SRS Progress Card ───────────────────────────────────────────── -->
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">SRS Progress</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="text-center">
+                <p class="text-2xl font-black text-blue-600">{{ user_word.repetitions }}</p>
+                <p class="text-xs text-gray-400 mt-1">Reviews</p>
+            </div>
+            <div class="text-center">
+                <p class="text-2xl font-black text-indigo-600">{{ user_word.interval_days }}</p>
+                <p class="text-xs text-gray-400 mt-1">Interval (days)</p>
+            </div>
+            <div class="text-center">
+                <p class="text-2xl font-black text-violet-600">{{ "%.1f"|format(user_word.ease_factor) }}</p>
+                <p class="text-xs text-gray-400 mt-1">Ease Factor</p>
+            </div>
+            <div class="text-center">
+                <p class="text-lg font-black
+                    {% if next_review_label == 'Due now' %}text-red-600
+                    {% elif 'h' in next_review_label %}text-orange-500
+                    {% else %}text-green-600{% endif %}">
+                    {{ next_review_label }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">Next Review</p>
+            </div>
+        </div>
+
+        {% if user_word.last_reviewed %}
+        <p class="text-xs text-gray-400 mt-4 text-right">
+            Last reviewed: {{ user_word.last_reviewed.strftime('%Y-%m-%d %H:%M') }}
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- ── Source Video Card ──────────────────────────────────────────── -->
+    {% if source_video %}
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Learned From</h2>
+        <div class="flex items-center gap-4">
+            {% if source_video.thumbnail_url %}
+            <img src="{{ source_video.thumbnail_url }}" alt="{{ source_video.title }}"
+                 class="w-20 h-14 object-cover rounded-lg shrink-0">
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800 truncate">{{ source_video.title }}</p>
+                {% if source_video.channel_name %}
+                <p class="text-sm text-gray-400">{{ source_video.channel_name }}</p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('video.detail', video_id=source_video.id) }}"
+               class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition">
+                Watch Again
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── In-Context Sentences ───────────────────────────────────────── -->
+    {% if context_sentences %}
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">
+            Word in Context
+            <span class="ml-2 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full normal-case">
+                {{ context_sentences | length }} sentence{{ 's' if context_sentences | length != 1 }}
+            </span>
+        </h2>
+        <p class="text-xs text-gray-400 mb-4">Real sentences from your watched videos containing "{{ vocab.word }}".</p>
+
+        <ul class="space-y-3">
+            {% for ctx in context_sentences %}
+            <li class="bg-gray-50 rounded-xl p-4 border border-gray-100 group">
+                <p class="text-gray-800 leading-relaxed">{{ ctx.highlighted | safe }}</p>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-xs text-gray-400 truncate">&#127916; {{ ctx.video_title }}</span>
+                    <a href="{{ url_for('video.detail', video_id=ctx.video_id) }}"
+                       class="text-xs text-blue-500 hover:text-blue-700 font-medium shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition">
+                        View video →
+                    </a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl shadow p-6 mb-6 text-center text-gray-400">
+        <p class="text-3xl mb-2">&#127916;</p>
+        <p class="font-medium">No in-context sentences found yet.</p>
+        <p class="text-sm mt-1">Watch more videos to see "{{ vocab.word }}" used in real sentences.</p>
+        <a href="{{ url_for('video.index') }}"
+           class="inline-block mt-4 text-sm text-blue-500 hover:text-blue-700 font-medium underline">
+            Browse Videos →
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- ── Quick Actions ─────────────────────────────────────────────── -->
+    <div class="flex flex-wrap gap-3 mt-2">
+        <a href="{{ url_for('vocab.review') }}"
+           class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-xl transition text-sm">
+            Start SRS Review
+        </a>
+        <a href="{{ url_for('vocab.flashcards') }}"
+           class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-xl transition text-sm">
+            Flashcard Mode
+        </a>
+        <a href="{{ url_for('quiz.vocab_challenge') }}"
+           class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl transition text-sm">
+            Vocabulary Quiz
+        </a>
+        <form method="POST" action="{{ url_for('vocab.remove_word', word_id=user_word.id) }}"
+              onsubmit="return confirm('Remove \'{{ vocab.word }}\' from your wordbook?')"
+              class="inline">
+            <button type="submit"
+                    class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-5 rounded-xl transition text-sm border border-red-200">
+                Remove Word
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function pronounce(word) {
+    if ('speechSynthesis' in window) {
+        const utt = new SpeechSynthesisUtterance(word);
+        utt.lang = 'en-US';
+        utt.rate = 0.85;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utt);
+    }
+}
+// Auto-pronounce on load
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () { pronounce('{{ vocab.word }}'); }, 400);
+});
+</script>
+{% endblock %}

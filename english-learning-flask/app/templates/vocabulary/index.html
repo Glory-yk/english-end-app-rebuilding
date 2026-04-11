@@ -90,7 +90,12 @@
                     data-meaning="{{ item.vocabulary.meaning_ko | lower }}"
                     data-status="{{ item.status }}"
                     data-review="{{ item.next_review.strftime('%Y-%m-%dT%H:%M') if item.next_review else '9999-01-01T00:00' }}">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">{{ item.vocabulary.word }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold">
+                        <a href="{{ url_for('vocab.word_detail', word_id=item.id) }}"
+                           class="text-blue-600 hover:text-blue-800 hover:underline transition">
+                            {{ item.vocabulary.word }}
+                        </a>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.vocabulary.meaning_ko }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full

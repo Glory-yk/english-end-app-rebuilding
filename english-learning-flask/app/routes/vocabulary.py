@@ -156,6 +156,96 @@ def flashcards():
     )
 
 
+@vocab_bp.route('/word/<word_id>')
+@login_required
+def word_detail(word_id):
+    """Word detail page: full info, SRS progress, and in-context subtitle sentences."""
+    import re as _re
+    from app.models.progress import LearningSession
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('vocab.index'))
+
+    user_word = UserVocabulary.query.filter_by(
+        id=word_id, profile_id=profile.id
+    ).first_or_404()
+
+    vocab = user_word.vocabulary
+
+    # Source video (where the word was originally saved)
+    source_video = None
+    if user_word.source_video:
+        from app.models.video import Video
+        source_video = Video.query.get(user_word.source_video)
+
+    # All subtitle sentences from the user's watched videos that contain this word
+    from app.models.video import Subtitle, Video as VideoModel
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    context_sentences = []
+    if watched_video_ids:
+        _word_re = _re.compile(
+            r'(?<![a-zA-Z\'-])' + _re.escape(vocab.word.lower()) + r'(?![a-zA-Z\'-])',
+            _re.IGNORECASE,
+        )
+        candidate_subs = (
+            Subtitle.query
+            .filter(Subtitle.video_id.in_(watched_video_ids))
+            .filter(~Subtitle.text.startswith('[System:'))
+            .all()
+        )
+        for sub in candidate_subs:
+            if _word_re.search(sub.text):
+                # Highlight the matched word span in the sentence
+                highlighted = _word_re.sub(
+                    lambda m: f'<mark class="bg-yellow-200 font-bold rounded px-0.5">{m.group(0)}</mark>',
+                    sub.text.strip(),
+                )
+                video_obj = VideoModel.query.get(sub.video_id)
+                context_sentences.append({
+                    'text': sub.text.strip(),
+                    'highlighted': highlighted,
+                    'video_title': video_obj.title if video_obj else 'Unknown Video',
+                    'video_id': sub.video_id,
+                })
+                if len(context_sentences) >= 6:
+                    break
+
+    # Next-review label
+    now = datetime.utcnow()
+    next_review = user_word.next_review
+    if next_review:
+        delta = next_review - now
+        if delta.total_seconds() < 0:
+            next_review_label = 'Due now'
+        elif delta.days == 0:
+            h = int(delta.total_seconds() // 3600)
+            next_review_label = f'In {h}h' if h else 'In <1h'
+        elif delta.days == 1:
+            next_review_label = 'Tomorrow'
+        else:
+            next_review_label = f'In {delta.days} days'
+    else:
+        next_review_label = '—'
+
+    return render_template(
+        'vocabulary/word_detail.html',
+        user_word=user_word,
+        vocab=vocab,
+        source_video=source_video,
+        context_sentences=context_sentences,
+        next_review_label=next_review_label,
+    )
+
+
 @vocab_bp.route('/review/answer/<word_id>', methods=['POST'])
 @login_required
 def submit_answer(word_id):
