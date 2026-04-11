@@ -1,9 +1,11 @@
 import re
+import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from markupsafe import Markup, escape
 from app.services.youtube_service import YouTubeService
 from app.models.video import Video, Subtitle
+from app.models.vocabulary import UserVocabulary
 from app import db
 
 # ── Grammar pattern detection ─────────────────────────────────────────────────
@@ -289,4 +291,30 @@ def detail(video_id):
     """Video detail/learning page."""
     video = Video.query.get_or_404(video_id)
     subtitles = Subtitle.query.filter_by(video_id=video.id).order_by(Subtitle.start_ms).all()
-    return render_template('video/detail.html', video=video, subtitles=subtitles)
+
+    # Fetch the user's saved words so the subtitle panel can highlight them
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    saved_words_json = '[]'
+    video_saved_words = []
+    if profile:
+        all_uvs = (
+            UserVocabulary.query
+            .filter_by(profile_id=profile.id)
+            .join(UserVocabulary.vocabulary)
+            .all()
+        )
+        saved_words_json = json.dumps([uv.vocabulary.word.lower() for uv in all_uvs])
+        video_saved_words = (
+            UserVocabulary.query
+            .filter_by(profile_id=profile.id, source_video=video.id)
+            .join(UserVocabulary.vocabulary)
+            .all()
+        )
+
+    return render_template(
+        'video/detail.html',
+        video=video,
+        subtitles=subtitles,
+        saved_words_json=saved_words_json,
+        video_saved_words=video_saved_words,
+    )

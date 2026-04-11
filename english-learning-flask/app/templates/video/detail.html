@@ -116,16 +116,20 @@
         <!-- Subtitles Sidebar -->
         <div class="lg:w-1/3">
             <div class="bg-white rounded-lg shadow-lg flex flex-col h-[70vh]">
-                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg flex items-center justify-between shrink-0">
                     <h2 class="text-xl font-bold">Subtitles</h2>
+                    <span id="saved-word-badge" class="{% if not video_saved_words %}hidden{% endif %} text-xs font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                        ✓ <span id="saved-count-num">{{ video_saved_words | length }}</span> saved
+                    </span>
                 </div>
-                <div id="subtitle-list" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div id="subtitle-list" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     {% for sub in subtitles %}
                     <div class="subtitle-item p-3 rounded-lg border border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors" 
                          data-start="{{ sub.start_ms }}" data-end="{{ sub.end_ms }}">
                         <p class="text-gray-800 text-lg">
                             {% for word in sub.text.split() %}
-                            <span class="hover:text-blue-600 hover:font-bold transition-all px-0.5 rounded cursor-help" 
+                            <span class="word-span hover:text-blue-600 hover:font-bold transition-all px-0.5 rounded cursor-help"
+                                  data-word="{{ word }}"
                                   onclick="addWord('{{ word | replace("'", "\\'") | replace(".", "") | replace(",", "") | replace("?", "") }}', '{{ video.id }}'); event.stopPropagation();">
                                 {{ word }}
                             </span>
@@ -134,6 +138,21 @@
                         <button class="text-xs text-blue-400 mt-2 hover:underline" onclick="seekTo({{ sub.start_ms / 1000 }})">Jump to here</button>
                     </div>
                     {% endfor %}
+                </div>
+
+                <!-- Words saved from this video -->
+                <div id="video-words-panel"
+                     class="{% if not video_saved_words %}hidden{% endif %} shrink-0 border-t border-gray-100 p-3 bg-gray-50 rounded-b-lg">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Saved from this video</p>
+                    <div id="video-word-chips" class="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                        {% for uv in video_saved_words %}
+                        <a href="{{ url_for('vocab.word_detail', word_id=uv.id) }}"
+                           class="inline-block bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded-full hover:bg-green-100 transition"
+                           title="{{ uv.vocabulary.meaning_ko }}">
+                            {{ uv.vocabulary.word }}
+                        </a>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -264,6 +283,42 @@
         player.playVideo();
     }
 
+    // ── Vocabulary highlighting ───────────────────────────────────────────────
+    const savedWords = new Set({{ saved_words_json | safe }});
+    let videoSavedCount = {{ video_saved_words | length }};
+
+    function cleanWord(w) {
+        return (w || '').replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+    }
+
+    function markWordSpan(span) {
+        span.classList.add('bg-green-100', 'text-green-700', 'font-medium');
+        span.classList.remove('hover:text-blue-600');
+        span.title = '✓ Already in your wordbook — click to re-save';
+    }
+
+    function highlightSavedWords() {
+        document.querySelectorAll('.word-span').forEach(span => {
+            const clean = cleanWord(span.dataset.word);
+            if (clean && savedWords.has(clean)) markWordSpan(span);
+        });
+    }
+
+    function updateSavedBadge() {
+        const badge = document.getElementById('saved-word-badge');
+        const num   = document.getElementById('saved-count-num');
+        if (!badge || !num) return;
+        if (videoSavedCount > 0) {
+            num.textContent = videoSavedCount;
+            badge.classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        highlightSavedWords();
+        updateSavedBadge();
+    });
+
     function addWord(word, videoId) {
         fetch('{{ url_for("vocab.add_word") }}', {
             method: 'POST',
@@ -272,7 +327,30 @@
         })
         .then(res => res.json())
         .then(data => {
-            // 간단한 알림 효과
+            if (data.status === 'added') {
+                const clean = word.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+                savedWords.add(clean);
+                videoSavedCount++;
+
+                // Highlight every instance of this word in the subtitles
+                document.querySelectorAll('.word-span').forEach(span => {
+                    if (cleanWord(span.dataset.word) === clean) markWordSpan(span);
+                });
+                updateSavedBadge();
+
+                // Add a chip to the "Saved from this video" panel
+                const panel = document.getElementById('video-words-panel');
+                const chips = document.getElementById('video-word-chips');
+                if (panel) panel.classList.remove('hidden');
+                if (chips) {
+                    const chip = document.createElement('span');
+                    chip.className = 'inline-block bg-green-50 border border-green-200 text-green-800 text-xs font-semibold px-2 py-0.5 rounded-full';
+                    chip.textContent = word.replace(/[^a-zA-Z'-]/g, '');
+                    chip.title = 'Just saved!';
+                    chips.appendChild(chip);
+                }
+            }
+
             const toast = document.createElement('div');
             toast.className = "fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl z-50 animate-bounce";
             toast.innerText = data.message;
