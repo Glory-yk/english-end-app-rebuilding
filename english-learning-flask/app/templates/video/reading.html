@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="text-gray-400 hover:text-gray-700 transition text-sm font-medium">← Back to Video</a>
+        <div>
+            <h1 class="text-2xl font-bold leading-tight">Reading Speed Tracker</h1>
+            <p class="text-gray-500 text-sm truncate max-w-xs">{{ video.title }}</p>
+        </div>
+    </div>
+
+    {% if not subtitles %}
+    <div class="bg-white rounded-xl shadow p-12 text-center">
+        <div class="text-5xl mb-4">📖</div>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">No subtitles available</h2>
+        <p class="text-gray-500 mb-6">This video has no subtitle lines to read through.</p>
+        <a href="{{ url_for('video.detail', video_id=video.id) }}"
+           class="bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition">
+            Go Back
+        </a>
+    </div>
+
+    {% else %}
+
+    <!-- How-to tip -->
+    <div class="bg-cyan-50 border border-cyan-200 rounded-xl px-5 py-3 mb-5 flex items-start gap-3">
+        <span class="text-cyan-400 text-lg mt-0.5">💡</span>
+        <p class="text-cyan-700 text-sm">
+            <strong>How it works:</strong> Read each line at your natural pace, then press
+            <kbd class="bg-white border border-cyan-300 px-1 rounded font-mono text-xs">Space</kbd>
+            or click <strong>Next</strong> to advance. We'll calculate your reading speed in words per minute (WPM).
+        </p>
+    </div>
+
+    <!-- Progress + live WPM -->
+    <div class="flex items-center justify-between mb-2">
+        <span id="progress-label" class="text-sm font-bold text-gray-500">
+            Line <span id="cur-line">0</span> of {{ subtitles|length }}
+        </span>
+        <span id="live-wpm" class="text-sm font-bold text-cyan-600 hidden">⚡ <span id="wpm-val">—</span> WPM</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+        <div id="progress-bar" class="bg-cyan-500 h-2 rounded-full transition-all duration-400" style="width: 0%"></div>
+    </div>
+
+    <!-- Main card -->
+    <div id="reading-card" class="bg-white rounded-xl shadow-2xl p-8 min-h-[300px] flex flex-col items-center justify-center text-center">
+
+        <!-- State: ready (initial) -->
+        <div id="state-ready">
+            <div class="text-5xl mb-4">📖</div>
+            <p class="text-gray-700 font-bold text-lg mb-2">Ready to start?</p>
+            <p class="text-gray-400 text-sm mb-2">
+                {{ subtitles|length }} lines &nbsp;·&nbsp; {{ total_words }} words total
+            </p>
+            <p class="text-gray-400 text-sm mb-8">Read at your own pace — there's no time pressure.</p>
+            <button id="start-btn" onclick="startReading()"
+                    class="bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white font-black text-lg py-3 px-10 rounded-full shadow-lg transition-transform"
+                    aria-label="Start reading">
+                Start Reading →
+            </button>
+        </div>
+
+        <!-- State: reading -->
+        <div id="state-reading" class="hidden w-full">
+            <p id="line-counter" class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5"></p>
+            <p id="reading-text"
+               class="text-2xl font-semibold text-gray-800 leading-relaxed mb-8 px-2"
+               aria-live="polite"></p>
+            <button onclick="nextLine()"
+                    class="bg-cyan-600 hover:bg-cyan-700 active:scale-95 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform"
+                    aria-label="Next line">
+                Next →
+            </button>
+            <p class="text-xs text-gray-400 mt-4">or press <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-xs">Space</kbd></p>
+        </div>
+
+        <!-- State: done -->
+        <div id="state-done" class="hidden w-full">
+            <div class="text-5xl mb-3">🏁</div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Session Complete!</p>
+
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-cyan-50 rounded-xl p-4">
+                    <p class="text-3xl font-black text-cyan-600" id="result-wpm">—</p>
+                    <p class="text-xs text-gray-500 font-bold mt-1">WPM</p>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <p class="text-3xl font-black text-blue-600" id="result-words">—</p>
+                    <p class="text-xs text-gray-500 font-bold mt-1">Words Read</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-4">
+                    <p class="text-3xl font-black text-purple-600" id="result-time">—</p>
+                    <p class="text-xs text-gray-500 font-bold mt-1">Minutes</p>
+                </div>
+            </div>
+
+            <!-- Level badge -->
+            <div id="level-badge" class="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm mb-2"></div>
+            <p id="level-tip" class="text-gray-500 text-sm mb-6 px-4"></p>
+
+            <!-- Personal best -->
+            <p id="pb-banner" class="hidden text-yellow-600 font-bold text-sm mb-4">🏆 New personal best for this video!</p>
+
+            <div class="flex gap-3 justify-center flex-wrap">
+                <button onclick="restartReading()"
+                        class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-6 rounded-full transition">
+                    Read Again
+                </button>
+                <a href="{{ url_for('video.detail', video_id=video.id) }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-6 rounded-full transition">
+                    Back to Video
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Keyboard shortcut hint -->
+    <p class="text-center text-xs text-gray-400 mt-4">
+        <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono">Space</kbd> next line &nbsp;|&nbsp;
+        <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono">R</kbd> restart
+    </p>
+
+    {% endif %}
+</div>
+
+<script>
+(function () {
+    const SUBS    = {{ subs_json | safe }};
+    const PB_KEY  = 'englearn_reading_{{ video.id }}';
+
+    let idx        = 0;
+    let startTime  = null;   // ms timestamp when reading began
+    let lineStart  = null;   // ms timestamp when current line appeared
+    let totalWords = 0;
+
+    // Speed level thresholds (WPM) and labels for ESL learners
+    const LEVELS = [
+        { max: 80,  label: 'Beginner',     tip: 'Great start! Keep practising — your speed will improve with every session.', cls: 'bg-red-100 text-red-700' },
+        { max: 130, label: 'Elementary',   tip: 'You\'re building fluency. Try reading more subtitle lines daily to accelerate.', cls: 'bg-orange-100 text-orange-700' },
+        { max: 180, label: 'Intermediate', tip: 'Solid reading speed for a learner. You can comfortably follow most TV dialogue.', cls: 'bg-yellow-100 text-yellow-700' },
+        { max: 240, label: 'Upper-Int.',   tip: 'Impressive! Your reading keeps pace with natural English speech.', cls: 'bg-green-100 text-green-700' },
+        { max: Infinity, label: 'Advanced', tip: 'Excellent speed — you\'re reading at or above native-speaker pace!', cls: 'bg-emerald-100 text-emerald-700' },
+    ];
+
+    function getLevel(wpm) {
+        return LEVELS.find(l => wpm < l.max) || LEVELS[LEVELS.length - 1];
+    }
+
+    function show(id) {
+        ['state-ready','state-reading','state-done'].forEach(function(s){
+            document.getElementById(s).classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    window.startReading = function () {
+        if (SUBS.length === 0) return;
+        idx        = 0;
+        totalWords = 0;
+        startTime  = Date.now();
+        show('state-reading');
+        document.getElementById('live-wpm').classList.remove('hidden');
+        showLine();
+    };
+
+    function showLine() {
+        if (idx >= SUBS.length) { finishReading(); return; }
+        const sub = SUBS[idx];
+        document.getElementById('reading-text').textContent  = sub.text;
+        document.getElementById('line-counter').textContent  = 'Line ' + (idx + 1) + ' of ' + SUBS.length;
+        document.getElementById('cur-line').textContent      = idx + 1;
+        const pct = Math.round((idx / SUBS.length) * 100);
+        document.getElementById('progress-bar').style.width  = pct + '%';
+        lineStart = Date.now();
+    }
+
+    window.nextLine = function () {
+        if (startTime === null) return;
+        totalWords += SUBS[idx].words;
+        idx++;
+        // Update live WPM
+        const elapsedMin = (Date.now() - startTime) / 60000;
+        if (elapsedMin > 0 && totalWords > 0) {
+            document.getElementById('wpm-val').textContent = Math.round(totalWords / elapsedMin);
+        }
+        showLine();
+    };
+
+    function finishReading() {
+        show('state-done');
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('cur-line').textContent = SUBS.length;
+
+        const elapsedMin = (Date.now() - startTime) / 60000;
+        const wpm        = elapsedMin > 0 ? Math.round(totalWords / elapsedMin) : 0;
+        const mins       = elapsedMin.toFixed(1);
+        const lvl        = getLevel(wpm);
+
+        document.getElementById('result-wpm').textContent   = wpm;
+        document.getElementById('result-words').textContent = totalWords;
+        document.getElementById('result-time').textContent  = mins;
+        document.getElementById('wpm-val').textContent      = wpm;
+
+        const badge = document.getElementById('level-badge');
+        badge.textContent   = lvl.label;
+        badge.className     = 'inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm mb-2 ' + lvl.cls;
+        document.getElementById('level-tip').textContent = lvl.tip;
+
+        // Personal best
+        try {
+            const prev = parseInt(localStorage.getItem(PB_KEY) || '0');
+            if (wpm > prev) {
+                localStorage.setItem(PB_KEY, wpm);
+                if (prev > 0) document.getElementById('pb-banner').classList.remove('hidden');
+            }
+        } catch(e) {}
+
+        startTime = null;
+    }
+
+    window.restartReading = function () {
+        show('state-ready');
+        document.getElementById('progress-bar').style.width = '0%';
+        document.getElementById('cur-line').textContent = '0';
+        document.getElementById('wpm-val').textContent = '—';
+    };
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+        if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+        if (e.key === ' ' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (!document.getElementById('state-reading').classList.contains('hidden')) nextLine();
+        }
+        if (e.key === 'r' || e.key === 'R') {
+            restartReading();
+        }
+    });
+})();
+</script>
+{% endblock %}

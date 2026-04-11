@@ -257,6 +257,24 @@ def shadowing(video_id):
     real_subs = [s for s in subtitles if not s.text.startswith('[System:')]
     return render_template('video/shadowing.html', video=video, subtitles=real_subs)
 
+
+@video_bp.route('/<video_id>/reading')
+@login_required
+def reading(video_id):
+    """Reading speed tracker: read subtitle lines at your own pace; measures WPM."""
+    video = Video.query.get_or_404(video_id)
+    subtitles = Subtitle.query.filter_by(video_id=video.id).order_by(Subtitle.start_ms).all()
+    real_subs = [s for s in subtitles if not s.text.startswith('[System:')]
+    subs_data = [{'text': s.text, 'words': len(s.text.split())} for s in real_subs]
+    total_words = sum(d['words'] for d in subs_data)
+    return render_template(
+        'video/reading.html',
+        video=video,
+        subtitles=real_subs,
+        subs_json=json.dumps(subs_data, ensure_ascii=False),
+        total_words=total_words,
+    )
+
 @video_bp.route('/<video_id>/listen')
 @login_required
 def listen(video_id):
