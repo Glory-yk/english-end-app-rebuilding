@@ -103,6 +103,48 @@ def export_csv():
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
 
+@vocab_bp.route('/boost-review', methods=['POST'])
+@login_required
+def boost_review():
+    """Mark a list of words for immediate SRS review.
+
+    Accepts JSON: {"words": ["word1", "word2", ...]}
+    Resets next_review to now and nudges ease_factor down so these words
+    surface first in the next SRS session.  This closes the feedback loop
+    between quiz wrong answers and the spaced-repetition queue.
+    """
+    data = request.get_json(silent=True) or {}
+    words = data.get('words', [])
+    if not words or not isinstance(words, list):
+        return jsonify({'status': 'error', 'message': 'No words provided.'}), 400
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        return jsonify({'status': 'error', 'message': 'No profile.'}), 404
+
+    updated = 0
+    for word_text in words[:20]:          # cap to prevent abuse
+        word_text = str(word_text).strip().lower()
+        vocab = Vocabulary.query.filter_by(word=word_text).first()
+        if not vocab:
+            continue
+        uv = UserVocabulary.query.filter_by(
+            profile_id=profile.id,
+            vocabulary_id=vocab.id
+        ).first()
+        if not uv:
+            continue
+        # Reset to due now; lower ease_factor (SM-2 minimum is 1.3)
+        uv.next_review = datetime.utcnow()
+        uv.ease_factor = max(1.3, uv.ease_factor - 0.15)
+        if uv.status == 'mastered':
+            uv.status = 'review'
+        updated += 1
+
+    db.session.commit()
+    return jsonify({'status': 'ok', 'updated': updated})
+
+
 @vocab_bp.route('/review')
 @login_required
 def review():

@@ -79,6 +79,16 @@
             <div id="missed-section" class="hidden text-left mb-8">
                 <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Words to revisit:</h3>
                 <ul id="missed-list" class="space-y-2"></ul>
+                <!-- Boost SRS button: schedule missed words for immediate review -->
+                <div id="boost-section" class="hidden mt-4 text-center">
+                    <button id="boost-btn" onclick="boostMissedWords()"
+                            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-5 rounded-full transition text-sm shadow">
+                        📌 Schedule missed words for SRS review
+                    </button>
+                    <p id="boost-status" class="hidden text-xs text-green-600 font-semibold mt-2">
+                        ✓ Scheduled! These words will appear in your next SRS session.
+                    </p>
+                </div>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -265,6 +275,32 @@ function showResults() {
             li.innerHTML = `<span class="font-bold text-red-700">${m.word}</span> → <span class="text-gray-700">${m.correct}</span>`;
             list.appendChild(li);
         });
+        document.getElementById('boost-section').classList.remove('hidden');
+    }
+}
+
+async function boostMissedWords() {
+    const words = missed.map(m => m.word);
+    const btn = document.getElementById('boost-btn');
+    const statusEl = document.getElementById('boost-status');
+    btn.disabled = true;
+    btn.textContent = 'Scheduling…';
+    try {
+        const resp = await fetch('{{ url_for("vocab.boost_review") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ words })
+        });
+        if (resp.ok) {
+            btn.classList.add('hidden');
+            statusEl.classList.remove('hidden');
+        } else {
+            btn.textContent = '📌 Schedule missed words for SRS review';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        btn.textContent = '📌 Schedule missed words for SRS review';
+        btn.disabled = false;
     }
 }
 
