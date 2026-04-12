@@ -171,6 +171,33 @@
         </div>
     </div>
 
+    <!-- ── Suggested Vocabulary ─────────────────────────────────────────────── -->
+    {% if suggested_words %}
+    <div class="mt-6 mb-2 bg-white rounded-xl shadow-sm border border-indigo-100 px-5 py-4" id="suggest-panel">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                    <span aria-hidden="true">&#128161;</span> Words to Learn from This Video
+                </h2>
+                <p class="text-xs text-gray-400 mt-0.5">Frequent words from the subtitles you haven't saved yet — tap any to add instantly.</p>
+            </div>
+            <button onclick="document.getElementById('suggest-panel').remove()"
+                    class="text-gray-300 hover:text-gray-500 transition text-lg leading-none ml-4 shrink-0"
+                    aria-label="Dismiss suggestions">&times;</button>
+        </div>
+        <div class="flex flex-wrap gap-2" id="suggestion-chips">
+            {% for word in suggested_words %}
+            <button class="suggest-chip inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold text-sm px-3 py-1.5 rounded-full hover:bg-indigo-100 active:scale-95 transition shadow-sm"
+                    data-word="{{ word }}"
+                    onclick="quickSave('{{ word }}', this)"
+                    aria-label="Add {{ word }} to wordbook">
+                <span class="text-indigo-400 font-bold text-base leading-none">+</span> {{ word }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ── Watch Next ───────────────────────────────────────────────────────── -->
     {% if similar_videos %}
     <div class="mt-10">
@@ -619,6 +646,17 @@
         pom.count    = 0;
         document.title = originalTitle;
         renderPom();
+    }
+
+    // ── Suggested vocabulary quick-save ───────────────────────────────────────
+    function quickSave(word, btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>&#10003;</span> ' + word;
+        btn.classList.remove('bg-indigo-50', 'border-indigo-200', 'text-indigo-700',
+                             'hover:bg-indigo-100');
+        btn.classList.add('bg-green-50', 'border-green-300', 'text-green-700',
+                          'cursor-default');
+        addWord(word, '{{ video.id }}');
     }
 </script>
 {% endblock %}

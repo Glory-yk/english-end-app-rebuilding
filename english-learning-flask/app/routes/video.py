@@ -1,5 +1,6 @@
 import re
 import json
+from collections import Counter
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from markupsafe import Markup, escape
@@ -323,6 +324,7 @@ def detail(video_id):
     profile = Profile.query.filter_by(user_id=current_user.id).first()
     saved_words_json = '[]'
     video_saved_words = []
+    suggested_words = []
     if profile:
         all_uvs = (
             UserVocabulary.query
@@ -337,6 +339,40 @@ def detail(video_id):
             .join(UserVocabulary.vocabulary)
             .all()
         )
+
+        # Suggested words: top-frequency content words from the video's subtitles
+        # that aren't already in the user's wordbook.  Surfaces the most useful
+        # vocabulary to save without requiring the user to read every subtitle line.
+        _SKIP = frozenset({
+            'that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'will',
+            'would', 'could', 'should', 'their', 'there', 'when', 'what', 'just',
+            'like', 'some', 'into', 'than', 'also', 'about', 'more', 'your', 'other',
+            'time', 'know', 'people', 'make', 'think', 'come', 'over', 'only', 'then',
+            'because', 'really', 'going', 'being', 'them', 'these', 'those', 'here',
+            'much', 'well', 'back', 'want', 'look', 'even', 'good', 'need', 'very',
+            'said', 'does', 'gets', 'says', 'most', 'ever', 'year', 'tell', 'take',
+            'each', 'through', 'around', 'still', 'every', 'while', 'where', 'after',
+            'before', 'might', 'shall', 'using', 'doing', 'getting', 'made', 'place',
+            'same', 'another', 'such', 'right', 'down', 'again', 'long', 'many',
+            'keep', 'give', 'away', 'something', 'anything', 'nothing', 'everything',
+            'someone', 'anyone', 'actually', 'maybe', 'pretty', 'quite', 'rather',
+            'always', 'never', 'sometimes', 'often', 'already', 'together', 'okay',
+            'yeah', 'well', 'just', 'like', 'know', 'mean', 'thing', 'things',
+            'make', 'made', 'going', 'come', 'came', 'went', 'said', 'saying',
+            'think', 'thought', 'want', 'wanted', 'need', 'needed', 'little',
+            'right', 'really', 'look', 'looks', 'feel', 'feels', 'felt', 'seem',
+            'seems', 'seemed', 'actually', 'basically', 'literally',
+        })
+        saved_set = {uv.vocabulary.word.lower() for uv in all_uvs}
+        _wc: Counter = Counter()
+        for sub in subtitles:
+            if sub.text.startswith('[System:'):
+                continue
+            for tok in re.findall(r'[a-zA-Z]+', sub.text):
+                w = tok.lower()
+                if len(w) >= 4 and w not in saved_set and w not in _SKIP:
+                    _wc[w] += 1
+        suggested_words = [w for w, _ in _wc.most_common(8)]
 
     # "Watch Next" — up to 3 same-difficulty videos, falling back to any other video
     similar_videos = (
@@ -379,4 +415,5 @@ def detail(video_id):
         video_saved_words=video_saved_words,
         similar_videos=similar_videos,
         watched_next_ids=watched_next_ids,
+        suggested_words=suggested_words,
     )
