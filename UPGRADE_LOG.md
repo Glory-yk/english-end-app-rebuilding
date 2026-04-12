@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-12 - [UI/UX] Global SRS review badge in the navigation bar
+Added a Flask context processor (`inject_global_due_count`) that injects the number of vocabulary words currently due for SRS review into every page template via a single lightweight COUNT query. When `global_due_count > 0`, a red pill badge appears on the "Vocabulary" nav link in both the desktop header and the mobile dropdown — desktop shows the count number, mobile shows "N due" — each linking directly to the `/vocab/review` page. Previously the due-words reminder was only visible on the dashboard amber banner; now it persists across every page in the app, keeping the SRS review loop top-of-mind regardless of what the user is doing. No schema changes required.
+
 ## 2026-04-12 - [UI/UX] Per-video watch progress bars in the Video Library
 Added a YouTube-style watch-progress strip to every video card in the library (`/video`). A thin colored bar appears at the very bottom of the thumbnail — blue for in-progress videos, green when ≥90% complete — and a small "X% watched" text label below the channel name reinforces the percentage. The backend adds one `SUM(watched_sec) GROUP BY video_id` query to the video index route and passes the result as a `video_progress` dict to the template; no schema changes required. This closes a key UX gap: users could see *which* videos were watched (green ✓ badge) but had no way to tell how far they had progressed through each one or which to pick up next.
 

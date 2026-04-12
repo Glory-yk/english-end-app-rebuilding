@@ -44,4 +44,26 @@ def create_app(config_class=Config):
     app.register_blueprint(quiz_bp, url_prefix='/quiz')
     app.register_blueprint(channels_bp, url_prefix='/channels')
 
+    @app.context_processor
+    def inject_global_due_count():
+        """Inject due-review word count into every template (authenticated users only)."""
+        from flask_login import current_user
+        from datetime import datetime
+
+        if not current_user.is_authenticated:
+            return {'global_due_count': 0}
+        try:
+            from app.models.profile import Profile
+            from app.models.vocabulary import UserVocabulary
+            profile = Profile.query.filter_by(user_id=current_user.id).first()
+            if not profile:
+                return {'global_due_count': 0}
+            due = UserVocabulary.query.filter(
+                UserVocabulary.profile_id == profile.id,
+                UserVocabulary.next_review <= datetime.utcnow()
+            ).count()
+            return {'global_due_count': due}
+        except Exception:
+            return {'global_due_count': 0}
+
     return app
