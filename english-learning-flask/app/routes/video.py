@@ -119,11 +119,13 @@ video_bp = Blueprint('video', __name__)
 @login_required
 def index():
     """List available videos."""
+    from sqlalchemy import func
     from app.models.progress import LearningSession
     from app.models.profile import Profile
     videos = Video.query.order_by(Video.created_at.desc()).all()
     profile = Profile.query.filter_by(user_id=current_user.id).first()
     watched_ids = set()
+    video_progress = {}  # video_id -> total watched seconds
     if profile:
         watched_ids = {
             row[0] for row in
@@ -132,7 +134,14 @@ def index():
                 .distinct()
                 .all()
         }
-    return render_template('video/index.html', videos=videos, watched_ids=watched_ids)
+        # Aggregate watched seconds per video for progress bars
+        for row in db.session.query(
+            LearningSession.video_id,
+            func.sum(LearningSession.watched_sec).label('total_sec')
+        ).filter_by(profile_id=profile.id).group_by(LearningSession.video_id).all():
+            video_progress[row.video_id] = row.total_sec or 0
+    return render_template('video/index.html', videos=videos, watched_ids=watched_ids,
+                           video_progress=video_progress)
 
 @video_bp.route('/add', methods=['GET', 'POST'])
 @login_required

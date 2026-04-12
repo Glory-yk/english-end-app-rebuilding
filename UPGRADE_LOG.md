@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-12 - [UI/UX] Per-video watch progress bars in the Video Library
+Added a YouTube-style watch-progress strip to every video card in the library (`/video`). A thin colored bar appears at the very bottom of the thumbnail — blue for in-progress videos, green when ≥90% complete — and a small "X% watched" text label below the channel name reinforces the percentage. The backend adds one `SUM(watched_sec) GROUP BY video_id` query to the video index route and passes the result as a `video_progress` dict to the template; no schema changes required. This closes a key UX gap: users could see *which* videos were watched (green ✓ badge) but had no way to tell how far they had progressed through each one or which to pick up next.
+
 ## 2026-04-12 - [Learning] Quiz-to-SRS feedback loop — boost missed quiz words into review queue
 Added a `POST /vocab/boost-review` endpoint that accepts a JSON list of English word strings and immediately schedules each matching `UserVocabulary` entry for SRS review: sets `next_review = now`, nudges `ease_factor` down by 0.15 (floored at SM-2 minimum 1.3), and demotes `mastered` words back to `review` status. When a Vocabulary Challenge session ends with one or more wrong answers, a new amber "📌 Schedule missed words for SRS review" button appears in the results screen beneath the missed-words list; clicking it POSTs the word list to the endpoint and replaces itself with a "✓ Scheduled!" confirmation. This closes the critical feedback loop that was missing: before, getting a word wrong in a quiz had zero effect on the spaced-repetition queue, so the same weak words could keep slipping through indefinitely. No schema changes required.
 
