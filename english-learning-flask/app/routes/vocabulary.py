@@ -246,6 +246,39 @@ def word_detail(word_id):
     )
 
 
+@vocab_bp.route('/print')
+@login_required
+def print_vocab():
+    """Render a print-optimised vocabulary sheet (browser prints to PDF)."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('vocab.index'))
+
+    words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .order_by(UserVocabulary.status, UserVocabulary.vocabulary)
+        .all()
+    )
+
+    # Group by status for a structured sheet
+    STATUS_ORDER = ['mastered', 'review', 'learning', 'new']
+    grouped = {s: [] for s in STATUS_ORDER}
+    for uw in words:
+        grouped.setdefault(uw.status, []).append(uw)
+
+    return render_template(
+        'vocabulary/print.html',
+        profile=profile,
+        grouped=grouped,
+        STATUS_ORDER=STATUS_ORDER,
+        total=len(words),
+        print_date=datetime.utcnow().strftime('%B %d, %Y'),
+    )
+
+
 @vocab_bp.route('/review/answer/<word_id>', methods=['POST'])
 @login_required
 def submit_answer(word_id):

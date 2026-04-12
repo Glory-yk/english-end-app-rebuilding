@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Sheet — {{ profile.name }}</title>
+    <style>
+        /* ── Base ── */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Georgia', serif;
+            font-size: 11pt;
+            color: #111;
+            background: #fff;
+            padding: 20px 28px;
+        }
+
+        /* ── Screen-only controls ── */
+        .screen-only {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            background: #f0f4ff;
+            border: 1px solid #c7d3f5;
+            border-radius: 10px;
+        }
+        .screen-only h2 {
+            font-size: 14pt;
+            font-family: sans-serif;
+            font-weight: 700;
+            color: #1e3a8a;
+            flex: 1;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 20px;
+            border-radius: 6px;
+            font-family: sans-serif;
+            font-size: 10pt;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: #1d4ed8;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #1e40af; }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover { background: #d1d5db; }
+
+        /* ── Print header ── */
+        .print-header {
+            border-bottom: 2px solid #1d4ed8;
+            padding-bottom: 10px;
+            margin-bottom: 18px;
+        }
+        .print-header h1 {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        .print-header .meta {
+            font-size: 9pt;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* ── Section headings ── */
+        .section-title {
+            font-size: 11pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin: 20px 0 10px;
+            display: inline-block;
+        }
+        .section-mastered  { background: #d1fae5; color: #065f46; }
+        .section-review    { background: #fef9c3; color: #713f12; }
+        .section-learning  { background: #dbeafe; color: #1e3a8a; }
+        .section-new       { background: #f3f4f6; color: #374151; }
+
+        /* ── Word grid: 2 columns ── */
+        .word-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+        }
+
+        /* ── Individual word card ── */
+        .word-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 8px 10px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .word-card .word {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #111827;
+        }
+        .word-card .meta-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 1px;
+        }
+        .word-card .phonetic {
+            font-size: 9pt;
+            color: #6b7280;
+            font-style: italic;
+        }
+        .word-card .pos-badge {
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .word-card .meaning {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #1d4ed8;
+            margin-top: 4px;
+        }
+        .word-card .example {
+            font-size: 9pt;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 3px;
+            line-height: 1.4;
+        }
+        .word-card .status-dot {
+            float: right;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+        .dot-mastered  { background: #10b981; }
+        .dot-review    { background: #f59e0b; }
+        .dot-learning  { background: #3b82f6; }
+        .dot-new       { background: #d1d5db; }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            font-family: sans-serif;
+            color: #6b7280;
+        }
+        .empty-state a {
+            color: #1d4ed8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        /* ── Footer ── */
+        .print-footer {
+            margin-top: 28px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 8pt;
+            color: #9ca3af;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ── Legend ── */
+        .legend {
+            display: flex;
+            gap: 14px;
+            font-size: 8.5pt;
+            font-family: sans-serif;
+            color: #6b7280;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ── Print media overrides ── */
+        @media print {
+            .screen-only { display: none !important; }
+            body { padding: 12px 16px; font-size: 10pt; }
+            .word-grid { gap: 6px 12px; }
+            .word-card { padding: 6px 8px; border-color: #d1d5db; }
+            .word-card .word { font-size: 11.5pt; }
+            .word-card .meaning { font-size: 10pt; }
+            .section-title { margin-top: 14px; }
+            .print-footer { position: running(footer); }
+
+            @page {
+                margin: 15mm 12mm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Screen-only controls bar -->
+<div class="screen-only">
+    <h2>Vocabulary Print Preview</h2>
+    <a href="{{ url_for('vocab.index') }}" class="btn btn-secondary">← Back to Wordbook</a>
+    <button onclick="window.print()" class="btn btn-primary">🖨 Print / Save as PDF</button>
+</div>
+
+<!-- Document header (visible in print) -->
+<div class="print-header">
+    <h1>Vocabulary Study Sheet — {{ profile.name }}</h1>
+    <div class="meta">
+        Generated on {{ print_date }} &nbsp;·&nbsp; {{ total }} word{{ 's' if total != 1 }} total
+    </div>
+</div>
+
+{% if total == 0 %}
+<div class="empty-state">
+    <p style="font-size:13pt; font-weight:700; margin-bottom:8px;">Your wordbook is empty.</p>
+    <p>Watch a video and tap words in the subtitle panel to start building your vocabulary.</p>
+    <p style="margin-top:12px;"><a href="{{ url_for('video.index') }}">Browse Videos →</a></p>
+</div>
+{% else %}
+
+<!-- Legend -->
+<div class="legend">
+    <span style="font-weight:700; color:#374151;">Status key:</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span> Mastered</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> Review</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Learning</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#d1d5db"></span> New</span>
+</div>
+
+{% for status in STATUS_ORDER %}
+{% set group = grouped[status] %}
+{% if group %}
+<div class="section-title section-{{ status }}">
+    {{ status | capitalize }}
+    ({{ group | length }} word{{ 's' if group | length != 1 }})
+</div>
+
+<div class="word-grid">
+{% for uw in group %}
+{% set v = uw.vocabulary %}
+<div class="word-card">
+    <span class="status-dot dot-{{ status }}"></span>
+    <div class="word">{{ v.word }}</div>
+    <div class="meta-row">
+        {% if v.phonetic %}
+        <span class="phonetic">{{ v.phonetic }}</span>
+        {% endif %}
+        {% if v.pos %}
+        <span class="pos-badge">{{ v.pos }}</span>
+        {% endif %}
+    </div>
+    <div class="meaning">{{ v.meaning_ko }}</div>
+    {% if v.example_en %}
+    <div class="example">"{{ v.example_en }}"</div>
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+
+{% endif %}
+
+<div class="print-footer">
+    <span>EngLearn — English Learning App</span>
+    <span>{{ profile.name }} · {{ print_date }}</span>
+</div>
+
+</body>
+</html>
