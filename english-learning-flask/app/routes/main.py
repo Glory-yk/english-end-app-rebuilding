@@ -265,6 +265,13 @@ def stats():
                          struggling_words=struggling_words)
 
 
+@main_bp.route('/study-timer')
+@login_required
+def study_timer():
+    """Pomodoro study timer page."""
+    return render_template('main/study_timer.html')
+
+
 @main_bp.route('/search')
 @login_required
 def search():
