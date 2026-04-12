@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Grammar Drill</h1>
+                <p class="text-gray-500 text-sm mt-1">Identify the grammar pattern in each sentence.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div id="progress-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="progress-label" class="text-right text-xs text-gray-400 mb-6">
+            Question <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8 min-h-[360px] flex flex-col justify-between">
+
+            <!-- Sentence display -->
+            <div class="mb-6">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 text-center">
+                    Which grammar pattern does this sentence use?
+                </p>
+                <div id="q-sentence"
+                     class="text-lg leading-relaxed text-gray-800 bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center font-medium">
+                </div>
+                <!-- Pattern description (shown after answering) -->
+                <div id="pattern-desc" class="hidden mt-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+                    <span id="pattern-icon" class="text-xl shrink-0"></span>
+                    <span id="pattern-desc-text" class="leading-snug"></span>
+                </div>
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <!-- Feedback bar -->
+            <div id="feedback" class="hidden text-center mt-4 py-3 rounded-xl font-bold text-lg"></div>
+
+            <!-- Next button -->
+            <div class="flex items-center justify-center mt-6">
+                <button id="next-btn" onclick="nextQuestion()"
+                        class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-8 rounded-full transition">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen (hidden until done) -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-2"></h2>
+            <p id="result-sub" class="text-gray-500 mb-6"></p>
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <span class="text-5xl font-black text-emerald-600" id="result-score"></span>
+                <span class="text-gray-400 text-lg">/ {{ total }}</span>
+            </div>
+
+            <!-- Missed questions review -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Review these patterns:</h3>
+                <ul id="missed-list" class="space-y-3"></ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.grammar_drill') }}"
+                   class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition">
+                    Play Again
+                </a>
+                <a href="{{ url_for('video.index') }}"
+                   class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition">
+                    Watch Videos →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1–4</kbd> choose &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> next
+        </p>
+    </div>
+</div>
+
+<script>
+const QUESTIONS = {{ questions_json|safe }};
+const PATTERN_INFO = {{ pattern_info_json|safe }};
+let current = 0;
+let score = 0;
+let answered = false;
+const missed = [];
+
+function highlightMatch(sentence, match) {
+    // Wrap the matched grammar construct in a yellow highlight
+    if (!match) return escapeHtml(sentence);
+    const idx = sentence.toLowerCase().indexOf(match.toLowerCase());
+    if (idx === -1) return escapeHtml(sentence);
+    return (
+        escapeHtml(sentence.slice(0, idx)) +
+        '<mark class="bg-yellow-200 font-bold rounded px-0.5 not-italic">' +
+        escapeHtml(sentence.slice(idx, idx + match.length)) +
+        '</mark>' +
+        escapeHtml(sentence.slice(idx + match.length))
+    );
+}
+
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function renderQuestion() {
+    const q = QUESTIONS[current];
+    answered = false;
+
+    // Show sentence with the grammar construct highlighted
+    document.getElementById('q-sentence').innerHTML = highlightMatch(q.sentence, q.match);
+    document.getElementById('pattern-desc').classList.add('hidden');
+
+    document.getElementById('q-num').textContent = current + 1;
+    const pct = (current / QUESTIONS.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    // Build option buttons
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    q.options.forEach(function(opt, idx) {
+        const info = PATTERN_INFO[opt] || {};
+        const btn = document.createElement('button');
+        btn.className = 'option-btn py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-800 text-sm font-semibold text-left hover:border-emerald-400 hover:bg-emerald-50 transition-all';
+        btn.dataset.opt = opt;
+        btn.innerHTML =
+            '<span class="text-gray-400 font-mono mr-2">' + (idx + 1) + '</span>' +
+            (info.icon ? '<span class="mr-1">' + info.icon + '</span>' : '') +
+            opt;
+        btn.onclick = function() { chooseOption(opt); };
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+}
+
+function chooseOption(chosen) {
+    if (answered) return;
+    answered = true;
+
+    const q = QUESTIONS[current];
+    const isCorrect = chosen === q.correct;
+    if (isCorrect) score++;
+    else missed.push(q);
+
+    // Colour the buttons
+    document.querySelectorAll('.option-btn').forEach(function(btn) {
+        btn.disabled = true;
+        const opt = btn.dataset.opt;
+        if (opt === q.correct) {
+            btn.classList.replace('border-gray-200', 'border-green-500');
+            btn.classList.add('bg-green-50', 'text-green-800');
+        } else if (opt === chosen && !isCorrect) {
+            btn.classList.replace('border-gray-200', 'border-red-400');
+            btn.classList.add('bg-red-50', 'text-red-800', 'line-through');
+        }
+    });
+
+    // Show pattern description
+    const info = PATTERN_INFO[q.correct] || {};
+    if (info.description) {
+        document.getElementById('pattern-icon').textContent = info.icon || '📖';
+        document.getElementById('pattern-desc-text').textContent =
+            q.correct + ': ' + info.description;
+        document.getElementById('pattern-desc').classList.remove('hidden');
+    }
+
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct!';
+    } else {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-red-100 text-red-700';
+        fb.textContent = '✗ That was: ' + q.correct;
+    }
+
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= QUESTIONS.length) {
+        showResults();
+    } else {
+        renderQuestion();
+    }
+}
+
+function saveQuizResult(type, icon, s, total) {
+    try {
+        const MAX = 10, KEY = 'englearn_quiz_history';
+        const hist = JSON.parse(localStorage.getItem(KEY) || '[]');
+        hist.unshift({ type: type, icon: icon, score: s, total: total, pct: Math.round(s / total * 100), ts: Date.now() });
+        if (hist.length > MAX) hist.splice(MAX);
+        localStorage.setItem(KEY, JSON.stringify(hist));
+    } catch (e) {}
+}
+
+function showResults() {
+    saveQuizResult('Grammar Drill', '📖', score, QUESTIONS.length);
+    document.getElementById('quiz-card').classList.add('hidden');
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+
+    document.getElementById('result-score').textContent = score;
+    const pct = Math.round((score / QUESTIONS.length) * 100);
+    document.getElementById('progress-bar').style.width = '100%';
+
+    let emoji, heading, sub;
+    if (pct === 100) {
+        emoji = '🏆'; heading = 'Grammar Master!'; sub = 'Perfect score — you have an excellent eye for grammar patterns.';
+    } else if (pct >= 80) {
+        emoji = '🎉'; heading = 'Great Grammar!'; sub = 'You\'re recognising patterns really well. Keep it up!';
+    } else if (pct >= 50) {
+        emoji = '💪'; heading = 'Good Effort!'; sub = 'Grammar takes practice — review the patterns below and try again.';
+    } else {
+        emoji = '📚'; heading = 'Keep Studying!'; sub = 'Check the pattern descriptions below to build your grammar awareness.';
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    if (missed.length > 0) {
+        const sec = document.getElementById('missed-section');
+        sec.classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(function(q) {
+            const info = PATTERN_INFO[q.correct] || {};
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm';
+            li.innerHTML =
+                '<p class="text-gray-700 mb-1 leading-relaxed">' +
+                highlightMatch(q.sentence, q.match) + '</p>' +
+                '<p class="text-xs font-bold text-red-600 mt-1">' +
+                (info.icon || '') + ' ' + q.correct + '</p>' +
+                '<p class="text-xs text-gray-500 mt-0.5">' + (info.description || '') + '</p>';
+            list.appendChild(li);
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const keyMap = { 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3 };
+    if (e.code in keyMap && !answered) {
+        e.preventDefault();
+        const btns = document.querySelectorAll('.option-btn');
+        const btn = btns[keyMap[e.code]];
+        if (btn) btn.click();
+    }
+    if (e.code === 'Enter' && answered) {
+        e.preventDefault();
+        document.getElementById('next-btn').click();
+    }
+});
+
+// Start
+renderQuestion();
+</script>
+{% endblock %}

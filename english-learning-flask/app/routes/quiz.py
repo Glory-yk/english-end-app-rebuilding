@@ -574,6 +574,122 @@ def daily_challenge():
     )
 
 
+@quiz_bp.route('/grammar-drill')
+@login_required
+def grammar_drill():
+    """Grammar Drill: read a real subtitle sentence and identify which grammar pattern it uses."""
+    # Import grammar pattern definitions from the video route (single source of truth)
+    from app.routes.video import _GRAMMAR_PATTERNS
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    # Only use subtitles from videos the user has actually watched
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    if not watched_video_ids:
+        flash("Watch some videos first to unlock Grammar Drill!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    all_subs = (
+        Subtitle.query
+        .filter(Subtitle.video_id.in_(watched_video_ids))
+        .filter(~Subtitle.text.startswith('[System:'))
+        .filter(Subtitle.text != '')
+        .all()
+    )
+
+    if not all_subs:
+        flash("No subtitle content found. Watch more videos to unlock Grammar Drill!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Collect sentences that clearly demonstrate each grammar pattern
+    PATTERN_LABELS = [p['label'] for p in _GRAMMAR_PATTERNS]
+
+    pattern_sentences = {}  # label -> list of {'sentence': str, 'match': str}
+    for pat in _GRAMMAR_PATTERNS:
+        matches = []
+        for sub in all_subs:
+            m = pat['regex'].search(sub.text)
+            if m and 4 <= len(sub.text.split()) <= 16:
+                matches.append({'sentence': sub.text.strip(), 'match': m.group(0)})
+        pattern_sentences[pat['label']] = matches
+
+    available_patterns = [lbl for lbl, sents in pattern_sentences.items() if sents]
+    if len(available_patterns) < 3:
+        flash(
+            "Not enough subtitle variety yet. "
+            "Watch more videos to unlock Grammar Drill!",
+            'warning',
+        )
+        return redirect(url_for('quiz.index'))
+
+    # Build up to 8 questions; cycle through patterns for variety
+    questions = []
+    used_sentences = set()
+    shuffled_patterns = list(available_patterns)
+    random.shuffle(shuffled_patterns)
+    cycle_idx = 0
+    attempts = 0
+
+    while len(questions) < 8 and attempts < 60:
+        attempts += 1
+        correct_label = shuffled_patterns[cycle_idx % len(shuffled_patterns)]
+        cycle_idx += 1
+
+        candidates = [
+            s for s in pattern_sentences[correct_label]
+            if s['sentence'] not in used_sentences
+        ]
+        if not candidates:
+            continue
+
+        chosen = random.choice(candidates)
+        used_sentences.add(chosen['sentence'])
+
+        # 3 distractor options from other pattern labels
+        other_labels = [l for l in PATTERN_LABELS if l != correct_label]
+        distractors = random.sample(other_labels, min(3, len(other_labels)))
+        options = distractors + [correct_label]
+        random.shuffle(options)
+
+        questions.append({
+            'sentence': chosen['sentence'],
+            'match': chosen['match'],
+            'correct': correct_label,
+            'options': options,
+        })
+
+    if len(questions) < 3:
+        flash(
+            "Not enough grammar examples found. Watch more videos to unlock Grammar Drill!",
+            'warning',
+        )
+        return redirect(url_for('quiz.index'))
+
+    # Pass pattern descriptions so the template can show them after each answer
+    pattern_info = {
+        p['label']: {'description': p['description'], 'icon': p['icon']}
+        for p in _GRAMMAR_PATTERNS
+    }
+
+    return render_template(
+        'quiz/grammar_drill.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+        pattern_info_json=json.dumps(pattern_info, ensure_ascii=False),
+        available_count=len(available_patterns),
+    )
+
+
 @quiz_bp.route('/vocab-by-video/<video_id>')
 @login_required
 def vocab_by_video(video_id):
