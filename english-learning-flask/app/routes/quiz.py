@@ -773,3 +773,56 @@ def vocab_by_video(video_id):
         video_title=video.title,
         video_id=video_id,
     )
+
+
+@quiz_bp.route('/anagram')
+@login_required
+def anagram():
+    """Anagram Challenge: tap scrambled letter tiles to spell the English word."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to try the Anagram Challenge.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Only words >= 3 letters (single-char words are trivial anagrams)
+    eligible = [uw for uw in all_words if len(uw.vocabulary.word.replace(' ', '')) >= 3]
+    if not eligible:
+        flash("Not enough suitable words. Add more words to your wordbook!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    sample_size = min(10, len(eligible))
+    selected = random.sample(eligible, sample_size)
+
+    questions = []
+    for uw in selected:
+        word = uw.vocabulary.word.lower()
+        letters = list(word)
+        shuffled = letters[:]
+        attempts = 0
+        while ''.join(shuffled) == word and len(letters) > 1 and attempts < 30:
+            random.shuffle(shuffled)
+            attempts += 1
+        questions.append({
+            'word': word,
+            'phonetic': uw.vocabulary.phonetic or '',
+            'pos': uw.vocabulary.pos or '',
+            'meaning': uw.vocabulary.meaning_ko,
+            'letters': shuffled,
+        })
+
+    return render_template(
+        'quiz/anagram.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+    )

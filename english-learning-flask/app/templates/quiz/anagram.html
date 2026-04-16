@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-lg">
+
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-black">🔤 Anagram Challenge</h1>
+        <p class="text-gray-500 mt-1">Tap the scrambled letters in the right order to spell the word.</p>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="bg-white rounded-2xl shadow-xl p-10 text-center">
+        <div class="text-7xl mb-4">🔤</div>
+        <h2 class="text-2xl font-black mb-2">Ready to Unscramble?</h2>
+        <p class="text-gray-500 mb-6 mx-auto max-w-sm">
+            {{ total }} words are loaded. You'll see the Korean meaning and scrambled letter
+            tiles — tap them in the right order to spell the English word.
+            Click an answer tile to send it back to the pool.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mb-8 text-sm">
+            <span class="bg-sky-100 text-sky-700 font-bold px-3 py-1 rounded-full">{{ total }} words</span>
+            <span class="bg-cyan-100 text-cyan-700 font-bold px-3 py-1 rounded-full">Tap to unscramble</span>
+            <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">Pronunciation</span>
+        </div>
+        <button onclick="startGame()"
+                class="bg-sky-500 hover:bg-sky-600 text-white font-black py-4 px-12 rounded-full text-xl shadow-lg transition transform hover:scale-105 active:scale-95">
+            Start →
+        </button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="hidden">
+
+        <!-- HUD -->
+        <div class="flex items-center justify-between mb-4 px-1">
+            <div class="bg-white rounded-xl shadow px-4 py-2 text-center min-w-[80px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Score</div>
+                <div id="score-display" class="text-3xl font-black text-green-600">0</div>
+            </div>
+            <div class="text-sm font-bold text-gray-500">
+                <span id="q-num">1</span> / {{ total }}
+            </div>
+            <div class="bg-white rounded-xl shadow px-4 py-2 text-center min-w-[80px]">
+                <div class="text-xs font-bold text-gray-400 uppercase">Wrong</div>
+                <div id="wrong-display" class="text-3xl font-black text-red-500">0</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-100 rounded-full h-2 mb-5 overflow-hidden">
+            <div id="progress-bar" class="h-2 rounded-full bg-sky-400 transition-all duration-300" style="width:0%"></div>
+        </div>
+
+        <!-- Question card -->
+        <div id="question-card" class="bg-white rounded-2xl shadow-xl p-6 mb-4">
+
+            <!-- Meaning -->
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center">Korean Meaning</p>
+            <p id="q-meaning" class="text-2xl font-bold text-center text-gray-800 mb-1"></p>
+            <p id="q-pos" class="text-xs text-center text-indigo-400 font-semibold mb-5 min-h-[1rem]"></p>
+
+            <!-- Answer area -->
+            <div class="mb-4">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 text-center">Your Answer</p>
+                <div id="answer-area"
+                     class="flex flex-wrap justify-center gap-2 min-h-[52px] p-2 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                </div>
+            </div>
+
+            <!-- Scrambled tile pool -->
+            <div class="mb-4">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 text-center">Scrambled Letters</p>
+                <div id="tile-area" class="flex flex-wrap justify-center gap-2"></div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center gap-3 mt-4">
+                <button onclick="clearAnswer()"
+                        class="text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition">
+                    ← Clear
+                </button>
+                <button onclick="skipWord()"
+                        class="text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl transition">
+                    Skip →
+                </button>
+            </div>
+
+            <!-- Feedback -->
+            <div id="feedback-msg" class="hidden mt-4 text-center text-lg font-black rounded-xl py-3 px-4"></div>
+        </div>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="results-screen" class="hidden">
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div id="result-emoji" class="text-7xl mb-4">🏆</div>
+            <h2 class="text-3xl font-black mb-1">
+                <span id="result-score">0</span> / {{ total }}
+            </h2>
+            <p id="result-pct" class="text-gray-400 text-sm mb-2"></p>
+            <p id="result-msg" class="text-gray-600 mb-6"></p>
+
+            <div id="missed-section" class="hidden text-left mb-6">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Missed Words</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3">
+                <a href="{{ url_for('quiz.anagram') }}"
+                   class="bg-sky-500 hover:bg-sky-600 text-white font-black py-3 px-6 rounded-full transition">
+                    Play Again →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-full transition">
+                    Quiz Hub
+                </a>
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition">
+                    SRS Review
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.45s ease-in-out; }
+</style>
+
+<script>
+const QUESTIONS = {{ questions_json | safe }};
+let currentIdx = 0, score = 0, wrongCount = 0, missed = [];
+let tileLetters = [];   // [{letter, origIdx, used}]
+let answerLetters = []; // [{letter, tileIdx}]
+let inputLocked = false;
+
+function startGame() {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    showQuestion();
+}
+
+function showQuestion() {
+    if (currentIdx >= QUESTIONS.length) { showResults(); return; }
+    const q = QUESTIONS[currentIdx];
+    inputLocked = false;
+    document.getElementById('q-meaning').textContent = q.meaning;
+    document.getElementById('q-pos').textContent = q.pos ? '[' + q.pos + ']' : '';
+    document.getElementById('progress-bar').style.width = (currentIdx / QUESTIONS.length * 100) + '%';
+    document.getElementById('q-num').textContent = currentIdx + 1;
+    document.getElementById('feedback-msg').classList.add('hidden');
+    tileLetters = q.letters.map((ch, i) => ({ letter: ch, origIdx: i, used: false }));
+    answerLetters = [];
+    renderTileArea();
+    renderAnswerArea();
+}
+
+function makeTileBtn(label, clickFn, style) {
+    const btn = document.createElement('button');
+    btn.className = 'w-11 h-11 rounded-xl text-xl font-black shadow transition transform hover:scale-110 active:scale-95 ' + style;
+    btn.textContent = label.toUpperCase();
+    btn.onclick = clickFn;
+    return btn;
+}
+
+function renderTileArea() {
+    const area = document.getElementById('tile-area');
+    area.innerHTML = '';
+    tileLetters.forEach((t, i) => {
+        if (t.used) {
+            const ph = document.createElement('div');
+            ph.className = 'w-11 h-11 rounded-xl bg-gray-100 border-2 border-dashed border-gray-200';
+            area.appendChild(ph);
+        } else {
+            area.appendChild(makeTileBtn(t.letter, () => pickTile(i),
+                'bg-sky-400 hover:bg-sky-500 text-white'));
+        }
+    });
+}
+
+function renderAnswerArea() {
+    const area = document.getElementById('answer-area');
+    area.innerHTML = '';
+    answerLetters.forEach((a, i) => {
+        area.appendChild(makeTileBtn(a.letter, () => returnTile(i),
+            'bg-indigo-500 hover:bg-indigo-600 text-white'));
+    });
+}
+
+function pickTile(tileIdx) {
+    if (inputLocked || tileLetters[tileIdx].used) return;
+    tileLetters[tileIdx].used = true;
+    answerLetters.push({ letter: tileLetters[tileIdx].letter, tileIdx });
+    renderTileArea();
+    renderAnswerArea();
+    if (answerLetters.length === tileLetters.length) checkAnswer();
+}
+
+function returnTile(answerPos) {
+    if (inputLocked) return;
+    const removed = answerLetters.splice(answerPos, 1)[0];
+    tileLetters[removed.tileIdx].used = false;
+    renderTileArea();
+    renderAnswerArea();
+}
+
+function checkAnswer() {
+    inputLocked = true;
+    const q = QUESTIONS[currentIdx];
+    const typed = answerLetters.map(a => a.letter).join('');
+    const fb = document.getElementById('feedback-msg');
+    if (typed === q.word) {
+        score++;
+        document.getElementById('score-display').textContent = score;
+        fb.className = 'mt-4 text-center text-lg font-black rounded-xl py-3 px-4 bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct! "' + q.word + '"';
+        fb.classList.remove('hidden');
+        pronounce(q.word);
+        setTimeout(() => { currentIdx++; showQuestion(); }, 1500);
+    } else {
+        wrongCount++;
+        document.getElementById('wrong-display').textContent = wrongCount;
+        missed.push({ word: q.word, meaning: q.meaning });
+        fb.className = 'mt-4 text-center text-lg font-black rounded-xl py-3 px-4 bg-red-100 text-red-700';
+        fb.textContent = '✗ The answer was "' + q.word + '" — try the next one';
+        fb.classList.remove('hidden');
+        document.getElementById('question-card').classList.add('animate-shake');
+        setTimeout(() => {
+            document.getElementById('question-card').classList.remove('animate-shake');
+            currentIdx++;
+            showQuestion();
+        }, 1400);
+    }
+}
+
+function clearAnswer() {
+    if (inputLocked) return;
+    answerLetters.forEach(a => { tileLetters[a.tileIdx].used = false; });
+    answerLetters = [];
+    renderTileArea();
+    renderAnswerArea();
+    document.getElementById('feedback-msg').classList.add('hidden');
+}
+
+function skipWord() {
+    if (inputLocked) return;
+    const q = QUESTIONS[currentIdx];
+    missed.push({ word: q.word, meaning: q.meaning });
+    wrongCount++;
+    document.getElementById('wrong-display').textContent = wrongCount;
+    currentIdx++;
+    showQuestion();
+}
+
+function showResults() {
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('results-screen').classList.remove('hidden');
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('result-score').textContent = score;
+    const pct = Math.round(score / QUESTIONS.length * 100);
+    document.getElementById('result-pct').textContent = pct + '% accuracy';
+    const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '📚' : '💪';
+    const msg = pct >= 80 ? "Excellent! You're an anagram master!" :
+                pct >= 50 ? 'Good effort — keep practising!' :
+                            'Keep going — spelling gets easier with repetition!';
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-msg').textContent = msg;
+
+    if (missed.length > 0) {
+        document.getElementById('missed-section').classList.remove('hidden');
+        const ul = document.getElementById('missed-list');
+        missed.forEach(m => {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex justify-between items-center gap-3';
+            li.innerHTML = '<span class="font-black text-red-700">' + m.word + '</span>' +
+                           '<span class="text-gray-600 text-sm text-right">' + m.meaning + '</span>';
+            ul.appendChild(li);
+        });
+    }
+
+    try {
+        const hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+        hist.unshift({ type: 'Anagram', icon: '🔤', score, total: QUESTIONS.length, pct, ts: Date.now() });
+        localStorage.setItem('englearn_quiz_history', JSON.stringify(hist.slice(0, 20)));
+    } catch(e) {}
+}
+
+function pronounce(word) {
+    if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = 'en-US'; u.rate = 0.85;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+    }
+}
+</script>
+{% endblock %}

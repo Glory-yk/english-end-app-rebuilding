@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-16 - [Quiz] Anagram Challenge — tap scrambled letter tiles to spell the English word
+Added an 11th quiz mode (`/quiz/anagram`) that is meaningfully different from all existing modes: users see the Korean meaning and a pool of scrambled letter tiles, then tap each tile in the correct order to spell the English word. Clicking an answer tile returns it to the pool, Clear resets the whole attempt, and Skip advances without penalty. Auto-pronounces via Web Speech API on a correct answer; a shake animation and the revealed word appear on a wrong attempt before advancing. Results screen shows score/percentage, a missed-words list, and saves to the shared `englearn_quiz_history` localStorage strip. A sky/cyan gradient "Anagram Challenge" card (Tap to unscramble · Up to 10 words · Pronunciation) was added to the Quiz Hub between Grammar Drill and Rapid Fire. This fills the gap between Spelling Bee (free-type) and Sentence Scramble (word-order): Anagram drills letter-level spelling through a tactile, low-pressure tile-selection UI that works equally well on mobile and desktop. No schema changes required.
+
 ## 2026-04-16 - [Performance] Dashboard Word of Day query optimization
 Replaced the dashboard's `UserVocabulary.query.filter_by(...).all()` call — which loaded every vocabulary row into memory — with a lightweight `COUNT` query plus a single-row `OFFSET`/`LIMIT` fetch using `joinedload` for the Word of the Day. For users with hundreds of saved words this eliminates O(n) memory use and removes the extra lazy-load SQL query that fired whenever the template accessed `word_of_day.vocabulary.*`. Added `order_by(UserVocabulary.id)` to guarantee stable, deterministic selection across page loads.
 
