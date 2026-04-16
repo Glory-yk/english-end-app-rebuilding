@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-16 - [Performance] Dashboard Word of Day query optimization
+Replaced the dashboard's `UserVocabulary.query.filter_by(...).all()` call — which loaded every vocabulary row into memory — with a lightweight `COUNT` query plus a single-row `OFFSET`/`LIMIT` fetch using `joinedload` for the Word of the Day. For users with hundreds of saved words this eliminates O(n) memory use and removes the extra lazy-load SQL query that fired whenever the template accessed `word_of_day.vocabulary.*`. Added `order_by(UserVocabulary.id)` to guarantee stable, deterministic selection across page loads.
+
 ## 2026-04-12 - [Vocabulary] "Words to Learn" suggested vocabulary panel on video detail page
 Added a proactive "Words to Learn from This Video" panel on the video detail page (`/video/<id>`). When a user views a video, the backend (`video.py detail()` route) now counts every word in the video's subtitles using `collections.Counter`, filters out short tokens, a ~70-word stop-list, and words already in the user's wordbook, then surfaces the top 8 most-frequent unsaved content words. These appear as indigo pill-buttons in a dismissible card between the video/subtitle area and the "Watch Next" section; tapping any pill immediately calls the existing `addWord()` fetch endpoint and the button turns green with a ✓ to confirm. Previously, discovering vocabulary from a video required manually clicking through individual subtitle words — users could easily miss the most important terms. Now the system proactively surfaces the highest-frequency unknown words, closing the gap between passive viewing and active vocabulary acquisition. No schema changes required.
 

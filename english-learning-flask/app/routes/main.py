@@ -88,17 +88,24 @@ def index():
 
         # Word of the Day: deterministic pick based on date + profile id
         today_str = datetime.utcnow().date().isoformat()
-        all_words = UserVocabulary.query.filter_by(profile_id=profile.id).all()
+        # Count first (cheap); then fetch only the single word needed via OFFSET
+        # instead of loading all vocabulary into memory.
+        word_count = UserVocabulary.query.filter_by(profile_id=profile.id).count()
         word_of_day = None
-        if all_words:
+        if word_count > 0:
             seed = int(hashlib.md5(f"{today_str}-{profile.id}".encode()).hexdigest(), 16)
-            word_of_day = all_words[seed % len(all_words)]
+            word_of_day = (
+                UserVocabulary.query
+                .filter_by(profile_id=profile.id)
+                .options(joinedload(UserVocabulary.vocabulary))
+                .order_by(UserVocabulary.id)
+                .offset(seed % word_count)
+                .limit(1)
+                .first()
+            )
 
         # Consecutive-day learning streak
         streak_days = _calculate_streak(profile.id)
-
-        # Total vocabulary count (reuse already-fetched all_words — no extra query)
-        word_count = len(all_words)
 
         return render_template('main/dashboard.html',
                                profile=profile,
