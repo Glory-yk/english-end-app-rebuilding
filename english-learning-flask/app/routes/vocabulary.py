@@ -244,6 +244,11 @@ def word_detail(word_id):
             .filter(~Subtitle.text.startswith('[System:'))
             .all()
         )
+        # Preload all watched videos in one query to avoid N+1 inside the loop.
+        watched_videos_map = {
+            v.id: v for v in
+            VideoModel.query.filter(VideoModel.id.in_(watched_video_ids)).all()
+        }
         for sub in candidate_subs:
             if _word_re.search(sub.text):
                 # Highlight the matched word span in the sentence
@@ -251,7 +256,7 @@ def word_detail(word_id):
                     lambda m: f'<mark class="bg-yellow-200 font-bold rounded px-0.5">{m.group(0)}</mark>',
                     sub.text.strip(),
                 )
-                video_obj = VideoModel.query.get(sub.video_id)
+                video_obj = watched_videos_map.get(sub.video_id)
                 context_sentences.append({
                     'text': sub.text.strip(),
                     'highlighted': highlighted,
