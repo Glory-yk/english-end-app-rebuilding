@@ -358,6 +358,33 @@
                 {% endif %}
             </div>
 
+            <!-- Dictation Mode -->
+            <div class="bg-gradient-to-br from-slate-600 to-sky-800 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-3xl" aria-hidden="true">🎧</span>
+                        <h3 class="text-xl font-black">Dictation Mode</h3>
+                        <span class="bg-white bg-opacity-20 text-white text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wide">Listening</span>
+                    </div>
+                    <p class="text-slate-200 text-sm mb-4">
+                        Press Play to hear a real subtitle sentence, then
+                        <strong class="text-white">type exactly what you hear</strong>.
+                        A slow-speed replay button helps you catch every word.
+                        Trains listening comprehension and spelling simultaneously.
+                    </p>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">From your videos</span>
+                        <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Up to 8 sentences</span>
+                        <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">🐢 Slow replay</span>
+                        <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full">Word accuracy score</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('quiz.dictation') }}"
+                   class="block text-center bg-white text-slate-700 font-black py-3 px-6 rounded-full hover:bg-slate-100 transition shadow-lg">
+                    Start Listening →
+                </a>
+            </div>
+
             <!-- Rapid Fire -->
             <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5 md:col-span-2">
                 <div class="flex flex-col md:flex-row md:items-start gap-5">

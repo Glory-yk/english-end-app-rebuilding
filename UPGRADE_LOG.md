@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-17 - [Learning] Dictation Mode quiz — listen and type subtitle sentences
+Added a `/quiz/dictation` route and template: the browser's `speechSynthesis` API reads a real subtitle sentence aloud (normal and 🐢 slow speed), the learner types what they hear, and per-word accuracy is scored and highlighted. Up to 8 sentences per session drawn from watched-video subtitles. Added a Dictation Mode card to the Quiz Hub index. This fills the listening-comprehension gap — all other quizzes are visual, but dictation forces the learner to decode spoken English and reproduce it, training both listening and spelling simultaneously.
+
 ## 2026-04-17 - [Learning] In-context subtitle sentences in SRS review cards
 Added a `GET /vocab/context-sentences/<word_id>` endpoint that scans the user's watched-video subtitles for sentences containing the current review word, HTML-escapes the text for safety, and highlights the matched word with a yellow `<mark>` tag. The SRS review template now shows a "From Your Videos" section below the example sentence when the answer is revealed — loaded lazily via a `fetch()` call in `revealAnswer()` so there is zero performance cost on page load. Up to 3 in-context sentences are returned per word. Seeing a word used in real subtitle sentences the learner has already watched dramatically increases retention versus a single isolated example sentence; this closes the gap between the Word Detail page (which already showed context) and the daily SRS review workflow.
 

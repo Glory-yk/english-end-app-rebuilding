@@ -826,3 +826,53 @@ def anagram():
         questions_json=json.dumps(questions, ensure_ascii=False),
         total=len(questions),
     )
+
+
+@quiz_bp.route('/dictation')
+@login_required
+def dictation():
+    """Dictation Mode: listen to a subtitle sentence and type what you hear."""
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    if not watched_video_ids:
+        flash("Watch some videos first to unlock Dictation Mode!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    all_subs = (
+        Subtitle.query
+        .filter(Subtitle.video_id.in_(watched_video_ids))
+        .all()
+    )
+
+    good_subs = [
+        s for s in all_subs
+        if not s.text.startswith('[System:')
+        and 4 <= len(s.text.split()) <= 10
+        and len(s.text.strip()) > 15
+    ]
+
+    if len(good_subs) < 3:
+        flash("Not enough subtitle content yet. Watch more videos to unlock Dictation Mode!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    sample_size = min(8, len(good_subs))
+    selected = random.sample(good_subs, sample_size)
+
+    sentences = [{'text': s.text.strip()} for s in selected]
+
+    return render_template(
+        'quiz/dictation.html',
+        sentences_json=json.dumps(sentences, ensure_ascii=False),
+        total=len(sentences),
+    )
