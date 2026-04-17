@@ -297,6 +297,55 @@
         </div>
     </div>
 
+    <!-- 7-Day Review Forecast -->
+    {% if word_count > 0 %}
+    <div class="bg-white rounded-xl shadow p-6 mb-10">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <span aria-hidden="true">📅</span> Review Forecast
+            </h2>
+            <a href="{{ url_for('vocab.review') }}"
+               class="text-xs text-indigo-600 font-semibold hover:underline whitespace-nowrap">Next 7 days</a>
+        </div>
+        <div class="grid grid-cols-7 gap-1 sm:gap-2" aria-label="7-day SRS review forecast">
+            {% for day in review_forecast %}
+            {% if review_forecast_max > 0 and day.count > 0 %}
+                {% set bar_h = ((day.count / review_forecast_max * 80) + 20) | round | int %}
+            {% else %}
+                {% set bar_h = 0 %}
+            {% endif %}
+            <div class="flex flex-col items-center gap-1"
+                 title="{{ day.count }} word{{ 's' if day.count != 1 else '' }} due on {{ day.date }}">
+                <span class="text-xs font-bold leading-none
+                             {{ 'text-indigo-600' if day.count > 0 else 'text-gray-300' }}">
+                    {{ day.count if day.count > 0 else '·' }}
+                </span>
+                <div class="w-full bg-gray-100 rounded-t relative" style="height:52px;">
+                    {% if day.count > 0 %}
+                    <div class="absolute bottom-0 left-0 right-0 rounded-t transition-all duration-500
+                                {{ 'bg-red-400' if day.count > 10 else ('bg-amber-400' if day.count > 4 else 'bg-indigo-400') }}"
+                         style="height:{{ bar_h }}%"></div>
+                    {% endif %}
+                </div>
+                <p class="text-xs font-semibold leading-none
+                          {{ 'text-indigo-600' if loop.first else 'text-gray-500' }}">
+                    {{ day.label }}
+                </p>
+                <p class="text-xs text-gray-400 leading-none">{{ day.date }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% set total_forecast = review_forecast | sum(attribute='count') %}
+        <p class="text-xs text-gray-400 mt-4 text-center">
+            {% if total_forecast > 0 %}
+                {{ total_forecast }} review{{ 's' if total_forecast != 1 else '' }} scheduled — stay consistent to keep your streak!
+            {% else %}
+                No reviews due in the next 7 days — keep adding words to grow your wordbook.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
     <!-- Word of the Day -->
     {% if word_of_day %}
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 mb-10 text-white">

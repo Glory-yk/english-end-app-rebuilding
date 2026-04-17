@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-17 - [UI/UX] 7-Day Review Forecast panel on dashboard
+Added a "Review Forecast" bar chart panel to the dashboard, positioned between "Today's Focus" and "Word of the Day". The backend adds a single `GROUP BY date` COUNT query to the dashboard route that finds how many UserVocabulary words have `next_review` in each of the next 7 days. The template renders these as a 7-column mini bar chart (proportional heights, colour-coded: indigo = light load, amber = medium, red = heavy ≥10), with each day's label and count above the bar. A total-forecast sentence below the chart motivates consistent review. This closes a real UX gap: users could see how many words were due *today* but had no visibility into upcoming load, making it impossible to plan study sessions or anticipate review spikes after adding many new words at once.
+
 ## 2026-04-17 - [Learning] Dictation Mode quiz — listen and type subtitle sentences
 Added a `/quiz/dictation` route and template: the browser's `speechSynthesis` API reads a real subtitle sentence aloud (normal and 🐢 slow speed), the learner types what they hear, and per-word accuracy is scored and highlighted. Up to 8 sentences per session drawn from watched-video subtitles. Added a Dictation Mode card to the Quiz Hub index. This fills the listening-comprehension gap — all other quizzes are visual, but dictation forces the learner to decode spoken English and reproduce it, training both listening and spelling simultaneously.
 

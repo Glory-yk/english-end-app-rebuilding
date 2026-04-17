@@ -107,6 +107,41 @@ def index():
         # Consecutive-day learning streak
         streak_days = _calculate_streak(profile.id)
 
+        # 7-day SRS review forecast (words due on each of the next 7 days)
+        review_forecast = []
+        review_forecast_max = 0
+        if word_count > 0:
+            now_dt = datetime.utcnow()
+            tomorrow_start = (now_dt + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            week_end = tomorrow_start + timedelta(days=7)
+            upcoming_rows = db.session.query(
+                func.date(UserVocabulary.next_review).label('day'),
+                func.count(UserVocabulary.id).label('cnt')
+            ).filter(
+                UserVocabulary.profile_id == profile.id,
+                UserVocabulary.next_review >= tomorrow_start,
+                UserVocabulary.next_review < week_end,
+            ).group_by(func.date(UserVocabulary.next_review)).all()
+
+            upcoming_map = {}
+            for row in upcoming_rows:
+                d = row.day if isinstance(row.day, str) else row.day.strftime('%Y-%m-%d')
+                upcoming_map[d] = row.cnt
+
+            today_date = now_dt.date()
+            for i in range(1, 8):
+                day = today_date + timedelta(days=i)
+                day_str = day.strftime('%Y-%m-%d')
+                count = upcoming_map.get(day_str, 0)
+                review_forecast.append({
+                    'label': 'Tomorrow' if i == 1 else day.strftime('%a'),
+                    'date': f"{day.strftime('%b')} {day.day}",
+                    'count': count,
+                })
+            review_forecast_max = max((d['count'] for d in review_forecast), default=0)
+
         return render_template('main/dashboard.html',
                                profile=profile,
                                sessions=recent_sessions,
@@ -118,7 +153,9 @@ def index():
                                due_count=due_count,
                                word_of_day=word_of_day,
                                streak_days=streak_days,
-                               word_count=word_count)
+                               word_count=word_count,
+                               review_forecast=review_forecast,
+                               review_forecast_max=review_forecast_max)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
