@@ -1,5 +1,7 @@
 import csv
+import html as _html
 import io
+import re as _re
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
@@ -324,6 +326,70 @@ def print_vocab():
         total=len(words),
         print_date=datetime.utcnow().strftime('%B %d, %Y'),
     )
+
+
+@vocab_bp.route('/context-sentences/<word_id>')
+@login_required
+def context_sentences(word_id):
+    """Return up to 3 in-context subtitle sentences for a vocabulary word (JSON).
+
+    Used by the SRS review page to lazily enrich each card with real examples
+    from the user's watched videos — fetched only when the answer is revealed.
+    """
+    from app.models.progress import LearningSession
+    from app.models.video import Subtitle, Video as VideoModel
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        return jsonify({'sentences': []})
+
+    user_word = UserVocabulary.query.filter_by(
+        id=word_id, profile_id=profile.id
+    ).first_or_404()
+    vocab = user_word.vocabulary
+
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    sentences = []
+    if watched_video_ids:
+        word_re = _re.compile(
+            r'(?<![a-zA-Z\'-])' + _re.escape(vocab.word.lower()) + r'(?![a-zA-Z\'-])',
+            _re.IGNORECASE,
+        )
+        # Scan at most 500 subtitle lines to keep response fast
+        candidate_subs = (
+            Subtitle.query
+            .filter(Subtitle.video_id.in_(watched_video_ids))
+            .filter(~Subtitle.text.startswith('[System:'))
+            .limit(500)
+            .all()
+        )
+        watched_videos_map = {
+            v.id: v for v in
+            VideoModel.query.filter(VideoModel.id.in_(watched_video_ids)).all()
+        }
+        for sub in candidate_subs:
+            if word_re.search(sub.text):
+                safe_text = _html.escape(sub.text.strip())
+                highlighted = word_re.sub(
+                    lambda m: f'<mark class="bg-yellow-200 font-bold rounded px-0.5">{_html.escape(m.group(0))}</mark>',
+                    safe_text,
+                )
+                video_obj = watched_videos_map.get(sub.video_id)
+                sentences.append({
+                    'highlighted': highlighted,
+                    'video_title': video_obj.title[:60] if video_obj else 'Unknown Video',
+                })
+                if len(sentences) >= 3:
+                    break
+
+    return jsonify({'sentences': sentences})
 
 
 @vocab_bp.route('/review/answer/<word_id>', methods=['POST'])

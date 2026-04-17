@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-17 - [Learning] In-context subtitle sentences in SRS review cards
+Added a `GET /vocab/context-sentences/<word_id>` endpoint that scans the user's watched-video subtitles for sentences containing the current review word, HTML-escapes the text for safety, and highlights the matched word with a yellow `<mark>` tag. The SRS review template now shows a "From Your Videos" section below the example sentence when the answer is revealed — loaded lazily via a `fetch()` call in `revealAnswer()` so there is zero performance cost on page load. Up to 3 in-context sentences are returned per word. Seeing a word used in real subtitle sentences the learner has already watched dramatically increases retention versus a single isolated example sentence; this closes the gap between the Word Detail page (which already showed context) and the daily SRS review workflow.
+
 ## 2026-04-16 - [Performance] Eliminate N+1 query in word detail + optimize video page vocabulary fetch
 Three query optimizations: (1) `word_detail()` in vocabulary.py preloads all watched-video objects into a dict before scanning subtitle lines, replacing up to 6 per-match `SELECT` calls with one `IN` query. (2) `detail()` in video.py replaces `UserVocabulary.query…all()` — which loaded full ORM objects for every saved word — with a lightweight `SELECT vocabulary.word` projection, reducing memory and CPU use on every video detail page load. (3) The large `_SKIP` frozenset (used for suggested-word filtering) is moved to module level so it is built once at import time instead of being re-created on each request.
 
