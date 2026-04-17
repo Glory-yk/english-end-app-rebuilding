@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-17 - [Learning] Sentence Shadowing — karaoke-style pronunciation & fluency practice
+Added a `/quiz/shadowing` route and template: real subtitle sentences are spoken via `speechSynthesis` with word-by-word karaoke highlighting (using the `onboundary` event), and users are prompted to repeat each sentence aloud. Includes normal and slow replay, a 3-step progress indicator (Listen → Shadow → Done), and a results summary. A Shadowing card was added to the Quiz Hub. This fills the "speaking output" gap — every other quiz mode tests recognition or typing, but pronunciation and fluency require actively producing spoken English, which shadowing directly trains.
+
 ## 2026-04-17 - [UI/UX] 7-Day Review Forecast panel on dashboard
 Added a "Review Forecast" bar chart panel to the dashboard, positioned between "Today's Focus" and "Word of the Day". The backend adds a single `GROUP BY date` COUNT query to the dashboard route that finds how many UserVocabulary words have `next_review` in each of the next 7 days. The template renders these as a 7-column mini bar chart (proportional heights, colour-coded: indigo = light load, amber = medium, red = heavy ≥10), with each day's label and count above the bar. A total-forecast sentence below the chart motivates consistent review. This closes a real UX gap: users could see how many words were due *today* but had no visibility into upcoming load, making it impossible to plan study sessions or anticipate review spikes after adding many new words at once.
 

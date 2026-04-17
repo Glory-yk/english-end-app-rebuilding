@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Sentence Shadowing</h1>
+                <p class="text-gray-500 text-sm mt-1">Listen, then repeat the sentence out loud to build fluency.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div id="progress-bar" class="bg-teal-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p class="text-right text-xs text-gray-400 mb-6">
+            Sentence <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8">
+
+            <!-- Step indicator -->
+            <div class="flex items-center justify-center gap-2 mb-6">
+                <div id="step-listen" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-teal-100 text-teal-700">
+                    <span>1</span><span>Listen</span>
+                </div>
+                <div class="w-6 h-px bg-gray-300"></div>
+                <div id="step-shadow" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-gray-100 text-gray-400">
+                    <span>2</span><span>Shadow</span>
+                </div>
+                <div class="w-6 h-px bg-gray-300"></div>
+                <div id="step-done" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-gray-100 text-gray-400">
+                    <span>3</span><span>Done</span>
+                </div>
+            </div>
+
+            <!-- Karaoke sentence display -->
+            <div id="sentence-display"
+                 class="text-center text-xl font-semibold text-gray-800 leading-relaxed tracking-wide mb-8 min-h-[4rem] flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-2">
+                <!-- words injected by JS -->
+            </div>
+
+            <!-- Tip (shown before first play) -->
+            <p id="tip-text" class="text-center text-sm text-gray-400 mb-8">
+                Press <strong class="text-teal-600">Play</strong> to hear the sentence — words will highlight as they're spoken.
+            </p>
+
+            <!-- Shadow prompt (shown after first play) -->
+            <div id="shadow-prompt" class="hidden text-center mb-8">
+                <div class="inline-flex flex-col items-center gap-2 bg-teal-50 border border-teal-200 rounded-2xl px-8 py-5">
+                    <span class="text-3xl" aria-hidden="true">🗣️</span>
+                    <p class="font-bold text-teal-800 text-base">Now repeat it out loud!</p>
+                    <p class="text-teal-600 text-xs">Speak the full sentence at a natural pace.</p>
+                </div>
+            </div>
+
+            <!-- Audio controls -->
+            <div class="flex items-center justify-center gap-3 mb-8 flex-wrap">
+                <button id="play-btn" onclick="playNormal()"
+                        class="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-8 rounded-full transition shadow-md"
+                        aria-label="Play sentence at normal speed">
+                    <span id="play-icon">▶</span>
+                    <span id="play-label">Play</span>
+                </button>
+                <button id="slow-btn" onclick="playSlow()"
+                        class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-3 px-5 rounded-full transition text-sm"
+                        aria-label="Play slowly">
+                    🐢 Slow
+                </button>
+            </div>
+
+            <!-- Action buttons -->
+            <div id="action-buttons" class="flex gap-3 justify-center flex-wrap">
+                <button id="done-btn" onclick="markDone()"
+                        class="hidden bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-8 rounded-lg transition">
+                    Got it ✓
+                </button>
+                <button id="skip-btn" onclick="skipSentence()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2 px-5 rounded-lg transition text-sm">
+                    Skip
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-title" class="text-2xl font-black mb-2 text-gray-800"></h2>
+            <p id="result-sub" class="text-gray-500 mb-8 text-sm"></p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.shadowing') }}"
+                   class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-full transition shadow">
+                    Practice Again
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-8 rounded-full transition">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const SENTENCES = {{ sentences_json|safe }};
+const TOTAL = {{ total }};
+
+let currentIdx = 0;
+let doneCount = 0;
+let hasPlayed = false;
+let isSpeaking = false;
+let wordSpans = [];
+
+function buildSentenceDisplay(text) {
+    const display = document.getElementById('sentence-display');
+    display.innerHTML = '';
+    wordSpans = [];
+    const words = text.split(/\s+/);
+    words.forEach((word, i) => {
+        const span = document.createElement('span');
+        span.textContent = word;
+        span.className = 'transition-all duration-100 rounded px-0.5';
+        span.dataset.idx = i;
+        display.appendChild(span);
+        wordSpans.push(span);
+    });
+}
+
+function clearHighlights() {
+    wordSpans.forEach(s => {
+        s.classList.remove('bg-teal-400', 'text-white', 'scale-110', 'text-gray-300');
+        s.classList.add('text-gray-800');
+    });
+}
+
+function highlightWord(charIndex, text) {
+    // Find which word index corresponds to this char position
+    const words = text.split(/\s+/);
+    let pos = 0;
+    let wordIdx = 0;
+    for (let i = 0; i < words.length; i++) {
+        if (charIndex >= pos && charIndex < pos + words[i].length) {
+            wordIdx = i;
+            break;
+        }
+        pos += words[i].length + 1; // +1 for space
+    }
+    clearHighlights();
+    // Dim previous words
+    for (let i = 0; i < wordIdx; i++) {
+        if (wordSpans[i]) {
+            wordSpans[i].classList.remove('text-gray-800');
+            wordSpans[i].classList.add('text-gray-300');
+        }
+    }
+    // Highlight current word
+    if (wordSpans[wordIdx]) {
+        wordSpans[wordIdx].classList.remove('text-gray-800', 'text-gray-300');
+        wordSpans[wordIdx].classList.add('bg-teal-400', 'text-white', 'scale-110');
+    }
+}
+
+function speakSentence(text, rate) {
+    if (!('speechSynthesis' in window)) {
+        alert('Your browser does not support speech synthesis. Please try Chrome or Edge.');
+        return;
+    }
+    speechSynthesis.cancel();
+    isSpeaking = true;
+
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const playLabel = document.getElementById('play-label');
+    playBtn.disabled = true;
+    playIcon.textContent = '◼';
+    playLabel.textContent = 'Playing…';
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = rate;
+
+    utterance.onboundary = function(event) {
+        if (event.name === 'word') {
+            highlightWord(event.charIndex, text);
+        }
+    };
+
+    utterance.onend = function() {
+        clearHighlights();
+        isSpeaking = false;
+        playBtn.disabled = false;
+        playIcon.textContent = '↺';
+        playLabel.textContent = 'Replay';
+
+        if (!hasPlayed) {
+            hasPlayed = true;
+            // Show shadow prompt and done button
+            document.getElementById('tip-text').classList.add('hidden');
+            document.getElementById('shadow-prompt').classList.remove('hidden');
+            document.getElementById('done-btn').classList.remove('hidden');
+            // Activate step 2
+            activateStep('step-shadow');
+        }
+    };
+
+    utterance.onerror = function() {
+        isSpeaking = false;
+        playBtn.disabled = false;
+        playIcon.textContent = '▶';
+        playLabel.textContent = 'Play';
+    };
+
+    speechSynthesis.speak(utterance);
+}
+
+function playNormal() {
+    speakSentence(SENTENCES[currentIdx].text, 1.0);
+}
+
+function playSlow() {
+    speakSentence(SENTENCES[currentIdx].text, 0.6);
+}
+
+function activateStep(stepId) {
+    ['step-listen', 'step-shadow', 'step-done'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === stepId) {
+            el.className = 'flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-teal-100 text-teal-700';
+        } else if (id < stepId) {
+            el.className = 'flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-teal-500 text-white';
+        } else {
+            el.className = 'flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-gray-100 text-gray-400';
+        }
+    });
+}
+
+function advance(counted) {
+    speechSynthesis.cancel();
+    if (counted) doneCount++;
+    currentIdx++;
+
+    if (currentIdx >= TOTAL) {
+        showResults();
+        return;
+    }
+
+    // Reset state
+    hasPlayed = false;
+    const sentence = SENTENCES[currentIdx];
+    buildSentenceDisplay(sentence.text);
+
+    document.getElementById('tip-text').classList.remove('hidden');
+    document.getElementById('shadow-prompt').classList.add('hidden');
+    document.getElementById('done-btn').classList.add('hidden');
+
+    const playIcon = document.getElementById('play-icon');
+    const playLabel = document.getElementById('play-label');
+    const playBtn = document.getElementById('play-btn');
+    playIcon.textContent = '▶';
+    playLabel.textContent = 'Play';
+    playBtn.disabled = false;
+
+    activateStep('step-listen');
+
+    // Progress
+    const pct = Math.round((currentIdx / TOTAL) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('q-num').textContent = currentIdx + 1;
+}
+
+function markDone() {
+    activateStep('step-done');
+    // Brief flash then advance
+    document.getElementById('done-btn').textContent = '✓ Shadowed!';
+    document.getElementById('done-btn').classList.add('opacity-50');
+    setTimeout(() => advance(true), 600);
+}
+
+function skipSentence() {
+    advance(false);
+}
+
+function showResults() {
+    document.getElementById('quiz-card').classList.add('hidden');
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+    document.getElementById('progress-bar').style.width = '100%';
+
+    const pct = Math.round((doneCount / TOTAL) * 100);
+    let emoji, title, sub;
+    if (pct >= 88) {
+        emoji = '🏆'; title = 'Outstanding Shadowing!';
+        sub = `You shadowed ${doneCount} of ${TOTAL} sentences. Your fluency is building fast!`;
+    } else if (pct >= 60) {
+        emoji = '🗣️'; title = 'Great Effort!';
+        sub = `You shadowed ${doneCount} of ${TOTAL} sentences. Keep practicing for smoother delivery.`;
+    } else {
+        emoji = '💪'; title = 'Keep Going!';
+        sub = `You completed ${doneCount} of ${TOTAL} sentences. Regular shadowing builds fluency quickly.`;
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-title').textContent = title;
+    document.getElementById('result-sub').textContent = sub;
+}
+
+// Initialise
+(function init() {
+    buildSentenceDisplay(SENTENCES[0].text);
+    document.getElementById('q-num').textContent = 1;
+    document.getElementById('progress-bar').style.width = '0%';
+})();
+</script>
+{% endblock %}
