@@ -16,6 +16,12 @@ class LearningSession(db.Model):
 
     video = db.relationship('Video', foreign_keys=[video_id])
 
+    __table_args__ = (
+        db.Index('idx_ls_profile', 'profile_id'),
+        db.Index('idx_ls_profile_created', 'profile_id', 'created_at'),
+        db.Index('idx_ls_video', 'video_id'),
+    )
+
 class Quiz(db.Model):
     __tablename__ = 'quizzes'
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

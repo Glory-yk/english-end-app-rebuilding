@@ -5,6 +5,7 @@ import re as _re
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 from app.models.vocabulary import Vocabulary, UserVocabulary
 from app.models.profile import Profile
 from app.services.srs_service import SrsService
@@ -152,11 +153,15 @@ def boost_review():
 def review():
     """Review due words using SM-2."""
     profile = Profile.query.filter_by(user_id=current_user.id).first()
-    due_words = UserVocabulary.query.filter(
-        UserVocabulary.profile_id == profile.id,
-        UserVocabulary.next_review <= datetime.utcnow()
-    ).all()
-    
+    due_words = (
+        UserVocabulary.query
+        .filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.next_review <= datetime.utcnow()
+        )
+        .options(joinedload(UserVocabulary.vocabulary))
+        .all()
+    )
     return render_template('vocabulary/review.html', words=due_words, count=len(due_words))
 
 @vocab_bp.route('/flashcards')

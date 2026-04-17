@@ -12,6 +12,35 @@ login = LoginManager()
 login.login_view = 'auth.login'
 htmx = HTMX()
 
+def _ensure_indexes(app):
+    """Create performance indexes on existing tables using IF NOT EXISTS.
+
+    SQLAlchemy's db.create_all() only creates indexes on new tables, so this
+    function runs idempotent CREATE INDEX IF NOT EXISTS statements at startup
+    to cover databases that were created before the Index() objects were added
+    to the models.
+    """
+    from sqlalchemy import text
+    stmts = [
+        "CREATE INDEX IF NOT EXISTS idx_uv_profile ON user_vocabulary(profile_id)",
+        "CREATE INDEX IF NOT EXISTS idx_uv_profile_review ON user_vocabulary(profile_id, next_review)",
+        "CREATE INDEX IF NOT EXISTS idx_uv_profile_status ON user_vocabulary(profile_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_ls_profile ON learning_sessions(profile_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ls_profile_created ON learning_sessions(profile_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_ls_video ON learning_sessions(video_id)",
+    ]
+    with app.app_context():
+        for stmt in stmts:
+            try:
+                db.session.execute(text(stmt))
+            except Exception:
+                db.session.rollback()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -43,6 +72,8 @@ def create_app(config_class=Config):
     app.register_blueprint(kids_bp, url_prefix='/kids')
     app.register_blueprint(quiz_bp, url_prefix='/quiz')
     app.register_blueprint(channels_bp, url_prefix='/channels')
+
+    _ensure_indexes(app)
 
     @app.context_processor
     def inject_global_due_count():

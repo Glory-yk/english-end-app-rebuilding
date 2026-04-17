@@ -35,5 +35,10 @@ class UserVocabulary(db.Model):
     status = db.Column(db.String(10), default='new') # 'new' / 'learning' / 'review' / 'mastered'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # UNIQUE: (profile_id, vocabulary_id)
-    __table_args__ = (db.UniqueConstraint('profile_id', 'vocabulary_id', name='uq_profile_word'),)
+    # UNIQUE + performance indexes
+    __table_args__ = (
+        db.UniqueConstraint('profile_id', 'vocabulary_id', name='uq_profile_word'),
+        db.Index('idx_uv_profile', 'profile_id'),
+        db.Index('idx_uv_profile_review', 'profile_id', 'next_review'),
+        db.Index('idx_uv_profile_status', 'profile_id', 'status'),
+    )
