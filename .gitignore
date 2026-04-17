@@ -60,3 +60,8 @@ redis_data/
 __pycache__/
 **/__pycache__/
 *.pyc
+
+# SQLite databases and Flask instance folder
+*.db
+*.sqlite3
+**/instance/
