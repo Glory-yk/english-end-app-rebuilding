@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-18 - [UI/UX] Quiz Performance panel on the Stats page
+Added a "Quiz Performance" analytics panel to the Learning Analytics page (`/stats`). The panel is hidden when no quiz history exists and appears automatically when the user has taken at least one quiz. It reads the `englearn_quiz_history` localStorage key (written by every quiz in the app) and displays: total quizzes taken, average score %, personal best %, and the "Strongest Quiz" type (the quiz category with the highest average score). A Chart.js bar chart shows the score % for each of the last 10 quizzes, colour-coded green/amber/red by pass/borderline/fail. Previously the Stats page had no quiz data at all despite quizzes being a core learning activity — this fills the gap and gives users a holistic view of their performance without any backend or schema changes.
+
 ## 2026-04-18 - [Micro-Feature] Daily study reminder with browser notifications
 Added a "Daily Study Reminder" panel to the dashboard that lets users set a daily browser notification at their preferred time (e.g., 8 PM). The reminder fires if the page is open at that time and the user hasn't yet met their daily study goal, showing how many minutes they've studied vs. their target. Preference is stored in `localStorage` (`englearn_reminder_time`), a per-day fired-flag (`englearn_reminder_fired_YYYY-MM-DD`) prevents duplicate notifications, and the Notifications API permission is requested only when the user clicks "Enable Reminder". The panel is collapsed by default for returning users (who already have a reminder set) and auto-opens once for first-time visitors to surface the feature. No backend or schema changes required.
 

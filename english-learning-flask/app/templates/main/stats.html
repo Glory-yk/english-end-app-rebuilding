@@ -156,6 +156,47 @@
         {% endif %}
     </div>
 
+    <!-- Quiz Performance -->
+    <div id="quiz-perf-panel" class="hidden bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">Quiz Performance</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Your recent quiz results from this browser session.</p>
+            </div>
+            <span id="qp-total-badge"
+                  class="shrink-0 text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100 self-start sm:self-auto">
+                — quizzes
+            </span>
+        </div>
+
+        <!-- Summary stats row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div class="text-center bg-purple-50 rounded-xl p-3">
+                <p id="qp-total" class="text-2xl font-black text-gray-800">—</p>
+                <p class="text-xs text-gray-400 mt-1">Quizzes Taken</p>
+            </div>
+            <div class="text-center bg-purple-50 rounded-xl p-3">
+                <p id="qp-avg" class="text-2xl font-black text-purple-600">—</p>
+                <p class="text-xs text-gray-400 mt-1">Average Score</p>
+            </div>
+            <div class="text-center bg-green-50 rounded-xl p-3">
+                <p id="qp-best-pct" class="text-2xl font-black text-green-600">—</p>
+                <p class="text-xs text-gray-400 mt-1">Best Score</p>
+            </div>
+            <div class="text-center bg-indigo-50 rounded-xl p-3">
+                <p id="qp-best-type" class="text-sm font-black text-indigo-600 leading-tight break-words">—</p>
+                <p class="text-xs text-gray-400 mt-1">Strongest Quiz</p>
+            </div>
+        </div>
+
+        <!-- Score trend chart: last 10 quizzes -->
+        <canvas id="quizTrendChart" height="90"></canvas>
+        <p class="text-center text-xs text-gray-400 mt-2">
+            Score % for each of your last quizzes
+            &mdash; <a href="{{ url_for('quiz.index') }}" class="text-purple-500 hover:underline font-medium">Open Quiz Hub →</a>
+        </p>
+    </div>
+
     <!-- Words Needing Attention -->
     <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
@@ -396,5 +437,82 @@
             }
         });
     }
+
+    // ── Quiz Performance panel (reads from localStorage) ──────────────
+    (function buildQuizPerf() {
+        try {
+            const hist = JSON.parse(localStorage.getItem('englearn_quiz_history') || '[]');
+            if (!hist.length) return;
+
+            const panel = document.getElementById('quiz-perf-panel');
+            if (!panel) return;
+            panel.classList.remove('hidden');
+
+            const total  = hist.length;
+            const avgPct = Math.round(hist.reduce((s, r) => s + r.pct, 0) / total);
+            const bestPct = Math.max(...hist.map(r => r.pct));
+
+            // Best quiz type by average score
+            const byType = {};
+            hist.forEach(function(r) {
+                if (!byType[r.type]) byType[r.type] = { sum: 0, cnt: 0 };
+                byType[r.type].sum += r.pct;
+                byType[r.type].cnt++;
+            });
+            let bestType = '—', bestTypeAvg = 0;
+            Object.entries(byType).forEach(function([type, obj]) {
+                const avg = obj.sum / obj.cnt;
+                if (avg > bestTypeAvg) { bestTypeAvg = avg; bestType = type; }
+            });
+
+            document.getElementById('qp-total').textContent       = total;
+            document.getElementById('qp-avg').textContent         = avgPct + '%';
+            document.getElementById('qp-best-pct').textContent    = bestPct + '%';
+            document.getElementById('qp-best-type').textContent   = bestType;
+            document.getElementById('qp-total-badge').textContent = total + ' quiz' + (total !== 1 ? 'zes' : '');
+
+            // Bar chart: last 10 quizzes, oldest→newest
+            const last10 = hist.slice(0, 10).reverse();
+            const colors = last10.map(function(r) {
+                return r.pct >= 80 ? 'rgba(16,185,129,0.75)' : r.pct >= 50 ? 'rgba(245,158,11,0.75)' : 'rgba(239,68,68,0.75)';
+            });
+            const ctx = document.getElementById('quizTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last10.map(function(r) { return r.icon + ' ' + r.type.split(' ')[0]; }),
+                    datasets: [{
+                        label: 'Score %',
+                        data: last10.map(function(r) { return r.pct; }),
+                        backgroundColor: colors,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) { return last10[items[0].dataIndex].type; },
+                                label: function(item) {
+                                    const r = last10[item.dataIndex];
+                                    return item.raw + '% (' + r.score + '/' + r.total + ')';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true, max: 100,
+                            grid: { color: 'rgba(0,0,0,0.04)' },
+                            ticks: { callback: function(v) { return v + '%'; }, color: '#9ca3af' }
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+        } catch(e) {}
+    })();
 </script>
 {% endblock %}
