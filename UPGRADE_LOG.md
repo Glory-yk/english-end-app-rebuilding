@@ -1,5 +1,8 @@
 # Upgrade Log
 
+## 2026-04-18 - [UI/UX] SRS Review progress bar + card counter
+Added a live progress bar and "Card X of N / Y remaining" counter above the flashcard deck on the Vocabulary Review page (`/vocab/review`). The bar fills from 0% → 100% (blue to green) as the user rates each card; `updateProgress()` is called inside `advanceCard()` so the indicator updates immediately after each rating, giving users a clear sense of how far through their session they are. Previously the only feedback was a static "Words Due: N" label — users reviewing 15–20 words had no way to gauge progress mid-session, which is a known cause of review abandonment. The progress bar also carries proper `role="progressbar"` / `aria-valuenow` / `aria-label` attributes for screen-reader accessibility. No backend or schema changes required.
+
 ## 2026-04-18 - [UI/UX] Quiz Performance panel on the Stats page
 Added a "Quiz Performance" analytics panel to the Learning Analytics page (`/stats`). The panel is hidden when no quiz history exists and appears automatically when the user has taken at least one quiz. It reads the `englearn_quiz_history` localStorage key (written by every quiz in the app) and displays: total quizzes taken, average score %, personal best %, and the "Strongest Quiz" type (the quiz category with the highest average score). A Chart.js bar chart shows the score % for each of the last 10 quizzes, colour-coded green/amber/red by pass/borderline/fail. Previously the Stats page had no quiz data at all despite quizzes being a core learning activity — this fills the gap and gives users a holistic view of their performance without any backend or schema changes.
 

@@ -15,6 +15,28 @@
         </div>
     </div>
 
+    {% if words %}
+    <!-- Progress bar: Card X of N -->
+    <div id="review-progress" class="max-w-2xl mx-auto mb-5" aria-label="Review progress">
+        <div class="flex items-center justify-between mb-1.5 text-sm">
+            <span class="font-bold text-gray-600">
+                Card <span id="current-card-num">1</span> of {{ count }}
+            </span>
+            <span class="text-gray-400"><span id="cards-remaining">{{ count }}</span> remaining</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div id="review-progress-bar"
+                 class="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
+                 style="width: 0%"
+                 role="progressbar"
+                 aria-valuenow="0"
+                 aria-valuemin="0"
+                 aria-valuemax="{{ count }}"
+                 aria-label="Review progress: 0 of {{ count }} cards reviewed"></div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="max-w-2xl mx-auto">
         <!-- Completion Screen (hidden until all cards reviewed) -->
         <div id="review-completion" class="hidden bg-white rounded-xl shadow-2xl p-12 text-center">
@@ -134,6 +156,28 @@
 
 <script>
     let autoSpeak = true;
+    let reviewedCount = 0;
+    const TOTAL_CARDS = {{ count }};
+
+    function updateProgress() {
+        reviewedCount++;
+        const pct = TOTAL_CARDS > 0 ? Math.round(reviewedCount / TOTAL_CARDS * 100) : 0;
+        const displayed = Math.min(reviewedCount + 1, TOTAL_CARDS);
+        const remaining = Math.max(0, TOTAL_CARDS - reviewedCount);
+
+        const bar = document.getElementById('review-progress-bar');
+        const numEl = document.getElementById('current-card-num');
+        const remEl = document.getElementById('cards-remaining');
+
+        if (bar) {
+            bar.style.width = pct + '%';
+            bar.setAttribute('aria-valuenow', reviewedCount);
+            bar.setAttribute('aria-label', 'Review progress: ' + reviewedCount + ' of ' + TOTAL_CARDS + ' cards reviewed');
+            if (pct === 100) bar.classList.replace('bg-blue-500', 'bg-green-500');
+        }
+        if (numEl) numEl.textContent = displayed;
+        if (remEl) remEl.textContent = remaining;
+    }
 
     // --- Web Speech API ---
     function speakWord(word) {
@@ -194,6 +238,7 @@
 
         // Hide current card slightly after HTMX finishes replacing it
         setTimeout(() => {
+            updateProgress();
             // Show next card if it exists
             if (nextCard && nextCard.classList.contains('card-item')) {
                 nextCard.classList.remove('hidden');
