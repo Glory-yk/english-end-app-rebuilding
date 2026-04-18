@@ -384,6 +384,53 @@
     </div>
     {% endif %}
 
+    <!-- Daily Study Reminder -->
+    <div class="bg-white rounded-xl shadow p-5 mb-10 border border-gray-100">
+        <button onclick="toggleReminderBody()"
+                class="w-full flex items-center justify-between group"
+                aria-expanded="false" id="reminder-toggle" aria-controls="reminder-body">
+            <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                <span aria-hidden="true">🔔</span> Daily Study Reminder
+            </h2>
+            <div class="flex items-center gap-3">
+                <span id="reminder-status" class="text-xs text-gray-400">Not set</span>
+                <svg id="reminder-chevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+        </button>
+
+        <div id="reminder-body" class="hidden mt-4">
+            <p class="text-sm text-gray-600 mb-4">
+                Get a browser notification each day when it's time to study — even if you forget to open the app.
+                Your reminder preference is saved locally on this device.
+            </p>
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+                <label for="reminder-time" class="text-sm font-semibold text-gray-700 shrink-0">Remind me at:</label>
+                <input type="time" id="reminder-time" value="20:00"
+                       class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                       aria-label="Reminder time">
+                <button id="reminder-enable-btn" onclick="enableReminder()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-1.5 px-4 rounded-lg transition">
+                    Enable Reminder
+                </button>
+                <button id="reminder-disable-btn" onclick="disableReminder()"
+                        class="hidden text-sm text-red-500 hover:text-red-700 font-medium py-1.5 px-2 transition">
+                    Remove
+                </button>
+            </div>
+            <p id="reminder-denied-msg" class="hidden text-xs text-red-500 mt-1">
+                ⚠ Notifications are blocked. Please allow notifications in your browser settings, then try again.
+            </p>
+            <p id="reminder-set-msg" class="hidden text-xs text-green-600 font-semibold mt-1">
+                ✓ Reminder active — you'll be notified at <span id="reminder-set-time" class="font-black"></span> each day.
+            </p>
+            <p class="text-xs text-gray-400 mt-3">
+                Note: The browser tab must be open at the reminder time for the notification to appear.
+            </p>
+        </div>
+    </div>
+
     <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         <a href="{{ url_for('video.index') }}" class="bg-blue-600 text-white p-4 rounded-lg shadow hover:bg-blue-700 text-center font-bold">Watch Videos</a>
@@ -501,6 +548,125 @@
             }
         }
     } catch (e) {}
+})();
+
+// ── Daily Study Reminder ──────────────────────────────────────────────────────
+(function () {
+    'use strict';
+    var PREF_KEY  = 'englearn_reminder_time';
+    var FIRED_PFX = 'englearn_reminder_fired_';
+    var today     = new Date().toISOString().slice(0, 10);
+
+    var statusEl   = document.getElementById('reminder-status');
+    var bodyEl     = document.getElementById('reminder-body');
+    var toggleBtn  = document.getElementById('reminder-toggle');
+    var chevron    = document.getElementById('reminder-chevron');
+    var enableBtn  = document.getElementById('reminder-enable-btn');
+    var disableBtn = document.getElementById('reminder-disable-btn');
+    var setMsg     = document.getElementById('reminder-set-msg');
+    var setTimeEl  = document.getElementById('reminder-set-time');
+    var deniedMsg  = document.getElementById('reminder-denied-msg');
+    var timeInput  = document.getElementById('reminder-time');
+
+    function fmt12(hhmm) {
+        var parts = hhmm.split(':');
+        var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        return (h % 12 || 12) + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
+    }
+
+    function updateUI() {
+        var t = localStorage.getItem(PREF_KEY);
+        if (t) {
+            statusEl.textContent = '🔔 ' + fmt12(t);
+            statusEl.className   = 'text-xs text-indigo-600 font-semibold';
+            enableBtn.classList.add('hidden');
+            disableBtn.classList.remove('hidden');
+            setMsg.classList.remove('hidden');
+            setTimeEl.textContent = fmt12(t);
+            timeInput.value = t;
+        } else {
+            statusEl.textContent = 'Not set';
+            statusEl.className   = 'text-xs text-gray-400';
+            enableBtn.classList.remove('hidden');
+            disableBtn.classList.add('hidden');
+            setMsg.classList.add('hidden');
+        }
+    }
+
+    window.toggleReminderBody = function () {
+        var open = !bodyEl.classList.contains('hidden');
+        if (open) {
+            bodyEl.classList.add('hidden');
+            chevron.style.transform = '';
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            bodyEl.classList.remove('hidden');
+            chevron.style.transform = 'rotate(180deg)';
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+    };
+
+    window.enableReminder = function () {
+        if (!('Notification' in window)) {
+            deniedMsg.classList.remove('hidden');
+            return;
+        }
+        Notification.requestPermission().then(function (perm) {
+            if (perm === 'granted') {
+                deniedMsg.classList.add('hidden');
+                localStorage.setItem(PREF_KEY, timeInput.value);
+                updateUI();
+                scheduleCheck();
+            } else {
+                deniedMsg.classList.remove('hidden');
+            }
+        });
+    };
+
+    window.disableReminder = function () {
+        localStorage.removeItem(PREF_KEY);
+        updateUI();
+    };
+
+    function fireNotification() {
+        var todayMin = {{ today_minutes }};
+        var goalMin  = {{ goal_min }};
+        var body = todayMin > 0
+            ? "You've studied " + todayMin + " of " + goalMin + " min today. Almost there — keep going!"
+            : "You haven't studied yet today. Open EngLearn and hit your " + goalMin + "-minute goal!";
+        try {
+            new Notification('EngLearn: time to study \uD83D\uDCDA', {
+                body: body,
+                tag : 'englearn-daily-reminder'
+            });
+        } catch (e) {}
+        localStorage.setItem(FIRED_PFX + today, '1');
+    }
+
+    function scheduleCheck() {
+        var t = localStorage.getItem(PREF_KEY);
+        if (!t || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        if (localStorage.getItem(FIRED_PFX + today) === '1') return;
+        var now = new Date();
+        var parts = t.split(':');
+        var remind = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                              parseInt(parts[0], 10), parseInt(parts[1], 10), 0);
+        if (now >= remind) {
+            fireNotification();
+        } else {
+            setTimeout(function () { fireNotification(); }, remind - now + 500);
+        }
+    }
+
+    // Auto-open panel on first visit (no reminder set) to surface the feature
+    if (!localStorage.getItem(PREF_KEY) && !localStorage.getItem('englearn_reminder_seen')) {
+        localStorage.setItem('englearn_reminder_seen', '1');
+        window.toggleReminderBody();
+    }
+
+    updateUI();
+    scheduleCheck();
 })();
 </script>
 {% endblock %}
