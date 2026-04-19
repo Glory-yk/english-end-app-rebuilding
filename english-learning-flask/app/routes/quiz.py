@@ -930,6 +930,114 @@ def shadowing():
     )
 
 
+@quiz_bp.route('/listening-comprehension')
+@login_required
+def listening_comprehension():
+    """Listening Comprehension: hear a full subtitle sentence via TTS and identify
+    which vocabulary word from the user's wordbook appeared in it.
+
+    Distinctly different from every existing audio mode:
+    - Listen & Choose: hears ONE WORD, picks Korean meaning
+    - Dictation: hears a sentence, types the whole thing
+    - Shadowing: hears a sentence, speaks along
+    - This mode: hears a FULL SENTENCE, identifies which saved vocab word it contained
+    Tests the core transfer skill — recognising known words inside natural speech.
+    """
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        flash("No profile found.", 'error')
+        return redirect(url_for('quiz.index'))
+
+    all_words = (
+        UserVocabulary.query
+        .filter_by(profile_id=profile.id)
+        .join(UserVocabulary.vocabulary)
+        .all()
+    )
+
+    if len(all_words) < 4:
+        flash("You need at least 4 words in your wordbook to try Listening Comprehension.", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    watched_video_ids = [
+        row[0]
+        for row in db.session.query(LearningSession.video_id)
+            .filter_by(profile_id=profile.id)
+            .distinct()
+            .all()
+    ]
+
+    if not watched_video_ids:
+        flash("Watch some videos first to unlock Listening Comprehension!", 'warning')
+        return redirect(url_for('quiz.index'))
+
+    # Build a map: lowercase word text → UserVocabulary for fast lookup
+    word_map = {uw.vocabulary.word.lower(): uw for uw in all_words}
+    _word_re = re.compile(r"[a-zA-Z']+")
+
+    all_subs = (
+        Subtitle.query
+        .filter(Subtitle.video_id.in_(watched_video_ids))
+        .filter(~Subtitle.text.startswith('[System:'))
+        .filter(Subtitle.text != '')
+        .all()
+    )
+    random.shuffle(all_subs)
+
+    all_words_pool = [uw.vocabulary.word for uw in all_words]
+    questions = []
+    used_sentences = set()
+
+    for sub in all_subs:
+        if len(questions) >= 8:
+            break
+        text = sub.text.strip()
+        if len(text.split()) < 4 or text in used_sentences:
+            continue
+
+        # Find vocab words that appear in this sentence
+        tokens = {t.lower() for t in _word_re.findall(text)}
+        matches = [word_map[t] for t in tokens if t in word_map]
+        if not matches:
+            continue
+
+        # Pick one match as the target; prefer non-mastered words
+        target_uv = next((m for m in matches if m.status != 'mastered'), matches[0])
+        target_word = target_uv.vocabulary.word
+
+        # 3 distractor English words (different from target)
+        distractor_pool = [w for w in all_words_pool if w.lower() != target_word.lower()]
+        if len(distractor_pool) < 3:
+            continue
+        distractors = random.sample(distractor_pool, 3)
+        options = distractors + [target_word]
+        random.shuffle(options)
+
+        used_sentences.add(text)
+        questions.append({
+            'sentence': text,
+            'correct': target_word,
+            'meaning': target_uv.vocabulary.meaning_ko,
+            'phonetic': target_uv.vocabulary.phonetic or '',
+            'pos': target_uv.vocabulary.pos or '',
+            'options': options,
+        })
+
+    if len(questions) < 3:
+        flash(
+            "Not enough subtitle content matches your vocabulary yet. "
+            "Watch more videos and save words to unlock Listening Comprehension!",
+            'warning',
+        )
+        return redirect(url_for('quiz.index'))
+
+    return render_template(
+        'quiz/listening_comprehension.html',
+        questions_json=json.dumps(questions, ensure_ascii=False),
+        total=len(questions),
+    )
+
+
 @quiz_bp.route('/listen-choose')
 @login_required
 def listen_choose():
