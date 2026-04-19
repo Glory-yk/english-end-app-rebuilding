@@ -15,7 +15,7 @@
     </div>
 
     <!-- Daily Challenge (featured full-row card) -->
-    <div class="mb-8">
+    <div class="mb-8" id="dc-section" data-qcat="timed">
         <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">Today's Challenge</h2>
         <div id="dc-card"
              class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl shadow-xl p-7 text-white flex flex-col md:flex-row md:items-center gap-6">
@@ -62,11 +62,39 @@
 
     <!-- Quiz cards -->
     <div class="mb-10">
-        <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide mb-4">Ready to Play</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <h2 class="text-lg font-bold text-gray-700 uppercase tracking-wide">Ready to Play</h2>
+            <!-- Category filter tabs -->
+            <div class="flex flex-wrap gap-2" id="qhub-tabs" role="tablist" aria-label="Filter quizzes by category">
+                <button class="qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-blue-600 text-white shadow"
+                        data-tab="all" onclick="filterQuizzes('all')" role="tab" aria-selected="true">
+                    All <span class="text-xs font-normal opacity-80">(14)</span>
+                </button>
+                <button class="qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        data-tab="vocabulary" onclick="filterQuizzes('vocabulary')" role="tab" aria-selected="false">
+                    📚 Vocabulary
+                </button>
+                <button class="qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        data-tab="sentences" onclick="filterQuizzes('sentences')" role="tab" aria-selected="false">
+                    📝 Sentences
+                </button>
+                <button class="qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        data-tab="listening" onclick="filterQuizzes('listening')" role="tab" aria-selected="false">
+                    🎧 Listening
+                </button>
+                <button class="qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        data-tab="timed" onclick="filterQuizzes('timed')" role="tab" aria-selected="false">
+                    ⏱ Timed
+                </button>
+            </div>
+        </div>
+        <div id="qhub-empty" class="hidden text-center py-10 text-gray-400">
+            <p class="text-lg">No quizzes in this category.</p>
+        </div>
+        <div id="quiz-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <!-- Vocabulary Challenge -->
-            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl">🧠</span>
@@ -99,7 +127,7 @@
             </div>
 
             <!-- Sentence Scramble -->
-            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="sentences">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl">🔀</span>
@@ -122,7 +150,7 @@
             </div>
 
             <!-- Cloze Quiz -->
-            <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="sentences">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl">✏️</span>
@@ -156,7 +184,7 @@
             </div>
 
             <!-- Spelling Bee -->
-            <div class="bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl">🐝</span>
@@ -189,7 +217,7 @@
             </div>
 
             <!-- Word Match -->
-            <div class="bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🔗</span>
@@ -223,7 +251,7 @@
             </div>
 
             <!-- True or False -->
-            <div class="bg-gradient-to-br from-indigo-500 to-blue-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-indigo-500 to-blue-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">✅</span>
@@ -257,7 +285,7 @@
             </div>
 
             <!-- Hard Words Drill -->
-            <div class="bg-gradient-to-br from-rose-500 to-red-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-rose-500 to-red-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🎯</span>
@@ -301,7 +329,7 @@
             </div>
 
             <!-- Grammar Drill -->
-            <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="sentences">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">📖</span>
@@ -325,7 +353,7 @@
             </div>
 
             <!-- Anagram Challenge -->
-            <div class="bg-gradient-to-br from-sky-400 to-cyan-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-sky-400 to-cyan-600 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="vocabulary">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🔤</span>
@@ -359,7 +387,7 @@
             </div>
 
             <!-- Dictation Mode -->
-            <div class="bg-gradient-to-br from-slate-600 to-sky-800 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-slate-600 to-sky-800 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="listening">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🎧</span>
@@ -386,7 +414,7 @@
             </div>
 
             <!-- Sentence Shadowing -->
-            <div class="bg-gradient-to-br from-teal-500 to-emerald-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-teal-500 to-emerald-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="listening">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🗣️</span>
@@ -413,7 +441,7 @@
             </div>
 
             <!-- Listen & Choose -->
-            <div class="bg-gradient-to-br from-purple-500 to-fuchsia-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5">
+            <div class="bg-gradient-to-br from-purple-500 to-fuchsia-700 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5" data-qcat="listening">
                 <div>
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-3xl" aria-hidden="true">🎧</span>
@@ -450,7 +478,7 @@
             </div>
 
             <!-- Rapid Fire -->
-            <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5 md:col-span-2">
+            <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-xl p-7 text-white flex flex-col justify-between gap-5 md:col-span-2" data-qcat="timed">
                 <div class="flex flex-col md:flex-row md:items-start gap-5">
                     <div class="flex-1">
                         <div class="flex items-center gap-3 mb-2">
@@ -525,6 +553,46 @@
     {% endif %}
 </div>
 <script>
+// Quiz Hub category filter
+function filterQuizzes(category) {
+    var dcSection = document.getElementById('dc-section');
+    var gridCards = document.querySelectorAll('#quiz-grid [data-qcat]');
+    var tabs = document.querySelectorAll('.qhub-tab');
+    var emptyMsg = document.getElementById('qhub-empty');
+    var activeClasses = 'qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-blue-600 text-white shadow';
+    var inactiveClasses = 'qhub-tab px-3 py-1.5 rounded-full text-sm font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200';
+
+    tabs.forEach(function(tab) {
+        var isActive = tab.dataset.tab === category;
+        tab.className = isActive ? activeClasses : inactiveClasses;
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    if (dcSection) {
+        dcSection.style.display = (category === 'all' || category === 'timed') ? '' : 'none';
+    }
+
+    var visibleGrid = 0;
+    gridCards.forEach(function(card) {
+        var match = category === 'all' || card.dataset.qcat === category;
+        card.style.display = match ? '' : 'none';
+        if (match) visibleGrid++;
+    });
+
+    var dcVisible = dcSection && dcSection.style.display !== 'none' ? 1 : 0;
+    if (emptyMsg) emptyMsg.classList.toggle('hidden', visibleGrid + dcVisible > 0);
+
+    try { localStorage.setItem('englearn_quiz_tab', category); } catch(e) {}
+}
+
+// Restore tab preference on page load
+(function () {
+    try {
+        var saved = localStorage.getItem('englearn_quiz_tab');
+        if (saved && saved !== 'all') filterQuizzes(saved);
+    } catch(e) {}
+})();
+
 // Daily Challenge completion check
 (function () {
     try {
