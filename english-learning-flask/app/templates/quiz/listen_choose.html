@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">🎧 Listening</span>
+                </div>
+                <h1 class="text-3xl font-bold">Listen &amp; Choose</h1>
+                <p class="text-gray-500 text-sm mt-1">Hear the word — pick the correct Korean meaning.</p>
+            </div>
+            <a href="{{ url_for('quiz.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Back</a>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+            <div id="progress-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <p id="progress-label" class="text-right text-xs text-gray-400 -mt-4 mb-6">
+            Question <span id="q-num">1</span> of {{ total }}
+        </p>
+
+        <!-- Quiz card -->
+        <div id="quiz-card" class="bg-white rounded-2xl shadow-xl p-8 min-h-[360px] flex flex-col justify-between">
+
+            <!-- Audio prompt area (word hidden until answered) -->
+            <div class="text-center mb-6">
+                <p id="prompt-label" class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    Listen and choose the correct meaning
+                </p>
+
+                <!-- Large play button shown before answering -->
+                <div id="play-area" class="flex flex-col items-center gap-3">
+                    <button id="play-btn" onclick="speakWord()"
+                            class="w-24 h-24 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-4xl shadow-xl transition-transform active:scale-95 flex items-center justify-center"
+                            aria-label="Play word pronunciation">
+                        🔊
+                    </button>
+                    <p class="text-xs text-gray-400">Press <kbd class="bg-gray-100 border border-gray-200 px-1 rounded font-mono">R</kbd> to replay</p>
+                </div>
+
+                <!-- Word reveal (hidden until answered) -->
+                <div id="word-reveal" class="hidden mt-2">
+                    <h2 id="q-word" class="text-4xl font-black text-purple-600"></h2>
+                    <div class="flex items-center justify-center gap-2 mt-2">
+                        <span id="q-phonetic" class="text-gray-400 italic text-sm"></span>
+                        <span id="q-pos" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full hidden"></span>
+                    </div>
+                    <button onclick="speakWord()" title="Replay"
+                            class="mt-2 text-purple-400 hover:text-purple-600 text-xl transition"
+                            aria-label="Replay word">&#128266;</button>
+                </div>
+            </div>
+
+            <!-- Options grid -->
+            <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+            <!-- Feedback bar (hidden until answer chosen) -->
+            <div id="feedback" class="hidden text-center mt-4 py-3 rounded-xl font-bold text-lg"></div>
+
+            <!-- Next button -->
+            <div class="text-center mt-6">
+                <button id="next-btn" onclick="nextQuestion()"
+                        class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-8 rounded-full transition">
+                    Next →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="results-screen" class="hidden bg-white rounded-2xl shadow-xl p-10 text-center">
+            <div id="result-emoji" class="text-6xl mb-4"></div>
+            <h2 id="result-heading" class="text-2xl font-bold mb-2"></h2>
+            <p id="result-sub" class="text-gray-500 mb-6"></p>
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <span class="text-5xl font-black text-purple-600" id="result-score"></span>
+                <span class="text-gray-400 text-lg">/ {{ total }}</span>
+            </div>
+
+            <!-- Missed words review -->
+            <div id="missed-section" class="hidden text-left mb-8">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Words to train your ear on:</h3>
+                <ul id="missed-list" class="space-y-2"></ul>
+                <div id="boost-section" class="hidden mt-4 text-center">
+                    <button id="boost-btn" onclick="boostMissedWords()"
+                            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-5 rounded-full transition text-sm shadow">
+                        📌 Schedule missed words for SRS review
+                    </button>
+                    <p id="boost-status" class="hidden text-xs text-green-600 font-semibold mt-2">
+                        ✓ Scheduled! These words will appear in your next SRS session.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ url_for('quiz.listen_choose') }}"
+                   class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition">
+                    Play Again
+                </a>
+                <a href="{{ url_for('vocab.review') }}"
+                   class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition">
+                    SRS Review →
+                </a>
+                <a href="{{ url_for('quiz.index') }}"
+                   class="bg-gray-100 text-gray-700 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+                    Quiz Hub
+                </a>
+            </div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p class="text-center text-xs text-gray-400 mt-4 select-none">
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">R</kbd> replay &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">1–4</kbd> choose &nbsp;
+            <kbd class="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded font-mono text-gray-600">Enter</kbd> next
+        </p>
+    </div>
+</div>
+
+<style>
+@keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(147,51,234,0.5); }
+    70%  { box-shadow: 0 0 0 14px rgba(147,51,234,0); }
+    100% { box-shadow: 0 0 0 0 rgba(147,51,234,0); }
+}
+.play-pulse { animation: pulse-ring 1.4s ease-out infinite; }
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.reveal-anim { animation: fade-in-up 0.35s ease-out; }
+</style>
+
+<script>
+const QUESTIONS = {{ questions_json|safe }};
+let current = 0;
+let score = 0;
+let answered = false;
+const missed = [];
+
+function speakWord() {
+    const word = QUESTIONS[current]?.word;
+    if (!word || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+function renderQuestion() {
+    const q = QUESTIONS[current];
+    answered = false;
+
+    // Reset UI: hide word reveal, show play button
+    document.getElementById('word-reveal').classList.add('hidden');
+    const playArea = document.getElementById('play-area');
+    playArea.classList.remove('hidden');
+    document.getElementById('play-btn').classList.add('play-pulse');
+
+    document.getElementById('q-num').textContent = current + 1;
+    const pct = (current / QUESTIONS.length) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn py-4 px-5 rounded-xl border-2 border-gray-200 text-gray-800 text-sm font-semibold text-left hover:border-purple-400 hover:bg-purple-50 transition-all';
+        btn.dataset.idx = idx;
+        btn.innerHTML = `<span class="text-gray-400 font-mono mr-2">${idx + 1}</span>${opt}`;
+        btn.onclick = () => chooseOption(idx);
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+
+    // Auto-speak after a short delay so the page has time to render
+    setTimeout(() => speakWord(), 350);
+}
+
+function revealWord() {
+    const q = QUESTIONS[current];
+    document.getElementById('play-area').classList.add('hidden');
+
+    const wordReveal = document.getElementById('word-reveal');
+    document.getElementById('q-word').textContent = q.word;
+
+    const phonEl = document.getElementById('q-phonetic');
+    phonEl.textContent = q.phonetic || '';
+
+    const posEl = document.getElementById('q-pos');
+    if (q.pos) {
+        posEl.textContent = q.pos;
+        posEl.classList.remove('hidden');
+    } else {
+        posEl.classList.add('hidden');
+    }
+
+    wordReveal.classList.remove('hidden');
+    wordReveal.classList.add('reveal-anim');
+    setTimeout(() => wordReveal.classList.remove('reveal-anim'), 400);
+}
+
+function chooseOption(chosenIdx) {
+    if (answered) return;
+    answered = true;
+
+    const q = QUESTIONS[current];
+    const isCorrect = q.options[chosenIdx] === q.correct;
+    if (isCorrect) score++;
+    else missed.push({ word: q.word, correct: q.correct, chosen: q.options[chosenIdx] });
+
+    // Reveal the hidden word
+    revealWord();
+
+    // Stop the pulsing ring since we've answered
+    document.getElementById('play-btn')?.classList.remove('play-pulse');
+
+    // Color the option buttons
+    document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+        btn.disabled = true;
+        const opt = q.options[idx];
+        if (opt === q.correct) {
+            btn.className = btn.className.replace('border-gray-200', 'border-green-500') + ' bg-green-50 text-green-800';
+        } else if (idx === chosenIdx && !isCorrect) {
+            btn.className = btn.className.replace('border-gray-200', 'border-red-400') + ' bg-red-50 text-red-800 line-through';
+        }
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-green-100 text-green-700';
+        fb.textContent = '✓ Correct!';
+        // Re-speak the word on correct to reinforce the audio-meaning link
+        setTimeout(() => speakWord(), 200);
+    } else {
+        fb.className = 'text-center mt-4 py-3 rounded-xl font-bold text-lg bg-red-100 text-red-700';
+        fb.textContent = `✗ The answer was: ${q.correct}`;
+    }
+
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+    current++;
+    if (current >= QUESTIONS.length) {
+        showResults();
+    } else {
+        renderQuestion();
+    }
+}
+
+function saveQuizResult(type, icon, s, total) {
+    try {
+        const MAX = 10, KEY = 'englearn_quiz_history';
+        const hist = JSON.parse(localStorage.getItem(KEY) || '[]');
+        hist.unshift({ type, icon, score: s, total, pct: Math.round(s / total * 100), ts: Date.now() });
+        if (hist.length > MAX) hist.splice(MAX);
+        localStorage.setItem(KEY, JSON.stringify(hist));
+    } catch (e) {}
+}
+
+function showResults() {
+    saveQuizResult('Listen & Choose', '🎧', score, QUESTIONS.length);
+    document.getElementById('quiz-card').classList.add('hidden');
+    const rs = document.getElementById('results-screen');
+    rs.classList.remove('hidden');
+
+    document.getElementById('result-score').textContent = score;
+    const pct = Math.round((score / QUESTIONS.length) * 100);
+
+    let emoji, heading, sub;
+    if (pct === 100) {
+        emoji = '🏆'; heading = 'Perfect Ear!'; sub = 'Outstanding! You recognised every word by sound.';
+    } else if (pct >= 80) {
+        emoji = '🎉'; heading = 'Sharp Hearing!'; sub = 'Great ear — your listening comprehension is strong.';
+    } else if (pct >= 50) {
+        emoji = '💪'; heading = 'Keep Listening!'; sub = 'Good effort — keep practising and your ear will sharpen.';
+    } else {
+        emoji = '🎧'; heading = 'Train Your Ear!'; sub = 'Listening is a skill — try again after more SRS review.';
+    }
+    document.getElementById('result-emoji').textContent = emoji;
+    document.getElementById('result-heading').textContent = heading;
+    document.getElementById('result-sub').textContent = sub;
+
+    document.getElementById('progress-bar').style.width = '100%';
+
+    if (missed.length > 0) {
+        const sec = document.getElementById('missed-section');
+        sec.classList.remove('hidden');
+        const list = document.getElementById('missed-list');
+        missed.forEach(m => {
+            const li = document.createElement('li');
+            li.className = 'bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm';
+            li.innerHTML = `<span class="font-bold text-red-700">${m.word}</span> → <span class="text-gray-700">${m.correct}</span>`;
+            list.appendChild(li);
+        });
+        document.getElementById('boost-section').classList.remove('hidden');
+    }
+}
+
+async function boostMissedWords() {
+    const words = missed.map(m => m.word);
+    const btn = document.getElementById('boost-btn');
+    const statusEl = document.getElementById('boost-status');
+    btn.disabled = true;
+    btn.textContent = 'Scheduling…';
+    try {
+        const resp = await fetch('{{ url_for("vocab.boost_review") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ words })
+        });
+        if (resp.ok) {
+            btn.classList.add('hidden');
+            statusEl.classList.remove('hidden');
+        } else {
+            btn.textContent = '📌 Schedule missed words for SRS review';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        btn.textContent = '📌 Schedule missed words for SRS review';
+        btn.disabled = false;
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const keyMap = { 'Digit1': 0, 'Digit2': 1, 'Digit3': 2, 'Digit4': 3 };
+    if (e.code in keyMap && !answered) {
+        e.preventDefault();
+        const btns = document.querySelectorAll('.option-btn');
+        const btn = btns[keyMap[e.code]];
+        if (btn) btn.click();
+    }
+    if (e.code === 'Enter' && answered) {
+        e.preventDefault();
+        document.getElementById('next-btn').click();
+    }
+    if (e.code === 'KeyR') {
+        e.preventDefault();
+        speakWord();
+    }
+});
+
+// Start
+renderQuestion();
+</script>
+{% endblock %}
