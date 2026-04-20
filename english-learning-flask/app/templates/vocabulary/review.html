@@ -39,13 +39,69 @@
 
     <div class="max-w-2xl mx-auto">
         <!-- Completion Screen (hidden until all cards reviewed) -->
-        <div id="review-completion" class="hidden bg-white rounded-xl shadow-2xl p-12 text-center">
-            <div class="text-6xl mb-4">&#127881;</div>
-            <h2 class="text-2xl font-bold text-green-600 mb-4">Session Complete!</h2>
-            <p class="text-gray-600 mb-8">
+        <div id="review-completion" class="hidden bg-white rounded-xl shadow-2xl p-8 text-center">
+            <div id="completion-emoji" class="text-6xl mb-3">&#127881;</div>
+            <h2 id="completion-title" class="text-2xl font-bold text-green-600 mb-1">Session Complete!</h2>
+            <p id="completion-subtitle" class="text-gray-500 text-sm mb-6">
                 You reviewed all <strong>{{ count }}</strong> word{{ 's' if count != 1 else '' }}.
-                Keep it up — consistency is the key to mastery.
             </p>
+
+            <!-- Session Summary Stats -->
+            <div id="session-summary" class="text-left mb-6">
+                <!-- Grade bar -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Session Score</span>
+                        <span id="session-grade" class="text-lg font-black text-green-600"></span>
+                    </div>
+                    <!-- Rating breakdown bars -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-14 text-xs text-right text-green-700 font-semibold shrink-0">Easy</span>
+                            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="bar-easy" class="bg-green-500 h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="cnt-easy" class="w-5 text-xs text-gray-500 shrink-0 text-right">0</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14 text-xs text-right text-green-500 font-semibold shrink-0">Good</span>
+                            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="bar-good" class="bg-green-400 h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="cnt-good" class="w-5 text-xs text-gray-500 shrink-0 text-right">0</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14 text-xs text-right text-yellow-600 font-semibold shrink-0">OK</span>
+                            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="bar-ok" class="bg-yellow-400 h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="cnt-ok" class="w-5 text-xs text-gray-500 shrink-0 text-right">0</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14 text-xs text-right text-orange-500 font-semibold shrink-0">Hard</span>
+                            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="bar-hard" class="bg-orange-400 h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="cnt-hard" class="w-5 text-xs text-gray-500 shrink-0 text-right">0</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14 text-xs text-right text-red-500 font-semibold shrink-0">Wrong</span>
+                            <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="bar-wrong" class="bg-red-400 h-3 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="cnt-wrong" class="w-5 text-xs text-gray-500 shrink-0 text-right">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Struggling words list (shown only when there are hard/wrong words) -->
+                <div id="struggling-section" class="hidden bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
+                    <p class="text-xs font-bold text-red-600 uppercase tracking-wide mb-2">&#x26A0; Words to Revisit</p>
+                    <div id="struggling-list" class="flex flex-wrap gap-2"></div>
+                    <p class="text-xs text-red-400 mt-2">These were rated Hard, Wrong, or Blank — they'll appear soon in your SRS queue.</p>
+                </div>
+            </div>
+
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <a href="{{ url_for('vocab.review') }}"
                    class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700">
@@ -114,7 +170,7 @@
                                 hx-vals='{"quality": {{ q }}}'
                                 hx-target="#card-{{ word.id }}"
                                 hx-swap="outerHTML"
-                                onclick="advanceCard()"
+                                onclick="advanceCard({{ q }}, this)"
                                 class="py-3 px-1 rounded-lg text-white text-xs font-bold transition-transform active:scale-95
                                 {% if q == 0 %}bg-red-600 hover:bg-red-700
                                 {% elif q == 1 %}bg-red-400 hover:bg-red-500
@@ -159,6 +215,9 @@
     let reviewedCount = 0;
     const TOTAL_CARDS = {{ count }};
 
+    // Session tracking: store {quality, word} for each rated card
+    const sessionRatings = [];
+
     function updateProgress() {
         reviewedCount++;
         const pct = TOTAL_CARDS > 0 ? Math.round(reviewedCount / TOTAL_CARDS * 100) : 0;
@@ -177,6 +236,66 @@
         }
         if (numEl) numEl.textContent = displayed;
         if (remEl) remEl.textContent = remaining;
+    }
+
+    function showSessionSummary() {
+        const total = sessionRatings.length || 1;
+        const counts = {blank:0, wrong:0, hard:0, ok:0, good:0, easy:0};
+        const strugglingWords = [];
+
+        sessionRatings.forEach(function(r) {
+            if      (r.q === 5) counts.easy++;
+            else if (r.q === 4) counts.good++;
+            else if (r.q === 3) counts.ok++;
+            else if (r.q === 2) { counts.hard++; if (r.word) strugglingWords.push(r.word); }
+            else if (r.q === 1) { counts.wrong++; if (r.word) strugglingWords.push(r.word); }
+            else                { counts.blank++; if (r.word) strugglingWords.push(r.word); }
+        });
+
+        // Score: weight each rating (Easy=5, Good=4, OK=3, Hard=2, Wrong=1, Blank=0) / max
+        const rawScore = sessionRatings.reduce(function(s, r) { return s + r.q; }, 0);
+        const maxScore = total * 5;
+        const pct = maxScore > 0 ? Math.round(rawScore / maxScore * 100) : 0;
+
+        // Grade label + emoji
+        let gradeText, emoji, titleText, subtitleText;
+        if (pct >= 90)      { gradeText = 'Excellent · ' + pct + '%'; emoji = '🏆'; titleText = 'Outstanding Session!'; subtitleText = 'Your memory is sharp — keep this momentum!'; }
+        else if (pct >= 75) { gradeText = 'Great · ' + pct + '%';     emoji = '🌟'; titleText = 'Great Job!';           subtitleText = 'Solid recall — a few more reviews and those tricky ones will click.'; }
+        else if (pct >= 55) { gradeText = 'Good · ' + pct + '%';      emoji = '👍'; titleText = 'Session Complete!';    subtitleText = 'Good effort — keep showing up daily for steady gains.'; }
+        else                { gradeText = 'Keep going · ' + pct + '%'; emoji = '💪'; titleText = 'Session Complete!';    subtitleText = 'These words need more time — the SRS will bring them back soon.'; }
+
+        document.getElementById('completion-emoji').textContent = emoji;
+        document.getElementById('completion-title').textContent = titleText;
+        document.getElementById('completion-subtitle').textContent = subtitleText;
+        document.getElementById('session-grade').textContent = gradeText;
+
+        // Animate rating bars (deferred so CSS transition fires)
+        function setBar(id, cntId, count) {
+            const pctW = Math.round(count / total * 100);
+            setTimeout(function() {
+                const el = document.getElementById(id);
+                if (el) el.style.width = pctW + '%';
+                const c = document.getElementById(cntId);
+                if (c) c.textContent = count;
+            }, 100);
+        }
+        setBar('bar-easy',  'cnt-easy',  counts.easy);
+        setBar('bar-good',  'cnt-good',  counts.good);
+        setBar('bar-ok',    'cnt-ok',    counts.ok);
+        setBar('bar-hard',  'cnt-hard',  counts.hard);
+        setBar('bar-wrong', 'cnt-wrong', counts.wrong + counts.blank);
+
+        // Struggling words list
+        if (strugglingWords.length > 0) {
+            const sec = document.getElementById('struggling-section');
+            const list = document.getElementById('struggling-list');
+            if (sec && list) {
+                list.innerHTML = [...new Set(strugglingWords)].map(function(w) {
+                    return '<span class="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full">' + w + '</span>';
+                }).join('');
+                sec.classList.remove('hidden');
+            }
+        }
     }
 
     // --- Web Speech API ---
@@ -229,10 +348,11 @@
     }
 
     // --- Advance to next card after a quality rating ---
-    function advanceCard() {
-        // Find currently visible card
+    function advanceCard(quality, btn) {
+        // Track current card's word + rating for session summary
         const currentCard = document.querySelector('.card-item:not(.hidden)');
         if (!currentCard) return;
+        sessionRatings.push({ q: quality, word: currentCard.dataset.word || '' });
 
         const nextCard = currentCard.nextElementSibling;
 
@@ -247,8 +367,10 @@
                     setTimeout(() => speakWord(nextWord), 250);
                 }
             } else {
-                // All cards done — show completion screen
+                // All cards done — build summary then show completion screen
+                showSessionSummary();
                 document.getElementById('review-completion').classList.remove('hidden');
+                document.getElementById('review-progress').classList.add('hidden');
             }
         }, 200);
     }
