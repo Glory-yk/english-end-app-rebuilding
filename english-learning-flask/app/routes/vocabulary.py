@@ -2,7 +2,7 @@ import csv
 import html as _html
 import io
 import re as _re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -146,6 +146,46 @@ def boost_review():
 
     db.session.commit()
     return jsonify({'status': 'ok', 'updated': updated})
+
+
+@vocab_bp.route('/set-status/<int:word_id>', methods=['POST'])
+@login_required
+def set_status(word_id):
+    """Update a word's SRS status directly from the wordbook (no full review needed).
+
+    Accepts JSON {"status": "mastered"} and adjusts next_review / SRS counters
+    to keep the spaced-repetition schedule consistent with the new status.
+    """
+    _VALID = ('new', 'learning', 'review', 'mastered')
+    data = request.get_json(silent=True) or {}
+    new_status = data.get('status')
+    if new_status not in _VALID:
+        return jsonify({'status': 'error', 'message': 'Invalid status'}), 400
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        return jsonify({'status': 'error', 'message': 'No profile'}), 404
+
+    user_word = UserVocabulary.query.filter_by(
+        id=word_id, profile_id=profile.id
+    ).first_or_404()
+
+    user_word.status = new_status
+    now = datetime.utcnow()
+
+    if new_status == 'mastered':
+        user_word.next_review = now + timedelta(days=30)
+        user_word.ease_factor = max(user_word.ease_factor or 2.5, 2.5)
+    elif new_status == 'new':
+        user_word.next_review = now
+        user_word.ease_factor = 2.5
+        user_word.repetitions = 0
+        user_word.interval = 0
+    elif new_status in ('learning', 'review'):
+        user_word.next_review = now
+
+    db.session.commit()
+    return jsonify({'status': 'ok', 'new_status': new_status})
 
 
 @vocab_bp.route('/review')

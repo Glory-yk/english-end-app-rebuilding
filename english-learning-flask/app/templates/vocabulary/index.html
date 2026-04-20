@@ -131,12 +131,19 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.vocabulary.meaning_ko }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                        <button class="status-badge px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer transition hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400
                             {% if item.status == 'new' %}bg-gray-100 text-gray-800
                             {% elif item.status == 'mastered' %}bg-green-100 text-green-800
-                            {% else %}bg-blue-100 text-blue-800{% endif %}">
+                            {% elif item.status == 'review' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-blue-100 text-blue-800{% endif %}"
+                                data-word-id="{{ item.id }}"
+                                data-word="{{ item.vocabulary.word }}"
+                                data-status="{{ item.status }}"
+                                onclick="cycleWordStatus(this)"
+                                aria-label="Status: {{ item.status }}. Click to advance to next stage."
+                                title="Click to advance status">
                             {{ item.status }}
-                        </span>
+                        </button>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {{ item.next_review.strftime('%Y-%m-%d %H:%M') if item.next_review else '—' }}
@@ -310,5 +317,84 @@
         updateCounts();
         setFilter('all');
     });
+
+    // ── Inline status cycling ─────────────────────────────────────────────────
+    const _STATUS_CYCLE = ['new', 'learning', 'review', 'mastered'];
+    const _STATUS_CLASSES = {
+        new:      'bg-gray-100 text-gray-800',
+        learning: 'bg-blue-100 text-blue-800',
+        review:   'bg-yellow-100 text-yellow-800',
+        mastered: 'bg-green-100 text-green-800',
+    };
+    const _STATUS_NEXT_LABEL = {
+        new:      'Click → learning',
+        learning: 'Click → review',
+        review:   'Click → mastered',
+        mastered: 'Click → new',
+    };
+
+    function applyStatusStyle(btn, status) {
+        // Strip old status colour classes
+        const keep = [...btn.classList].filter(c => !c.startsWith('bg-') && !c.startsWith('text-'));
+        btn.className = keep.join(' ');
+        _STATUS_CLASSES[status].split(' ').forEach(c => btn.classList.add(c));
+        btn.textContent = status;
+        btn.dataset.status = status;
+        btn.title = _STATUS_NEXT_LABEL[status] || 'Click to change status';
+        btn.setAttribute('aria-label', `Status: ${status}. ${btn.title}`);
+    }
+
+    function cycleWordStatus(btn) {
+        const prev = btn.dataset.status;
+        const nextIdx = (_STATUS_CYCLE.indexOf(prev) + 1) % _STATUS_CYCLE.length;
+        const newStatus = _STATUS_CYCLE[nextIdx];
+
+        // Optimistic UI update
+        applyStatusStyle(btn, newStatus);
+        btn.closest('tr').dataset.status = newStatus;
+
+        fetch(`/vocab/set-status/${btn.dataset.wordId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: newStatus}),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                showPageToast(`"${btn.dataset.word}" → ${newStatus}`, 'success');
+                updateCounts();
+                filterTable();
+            } else {
+                // Revert on server error
+                applyStatusStyle(btn, prev);
+                btn.closest('tr').dataset.status = prev;
+                showPageToast('Could not update status — please try again.', 'error');
+            }
+        })
+        .catch(() => {
+            applyStatusStyle(btn, prev);
+            btn.closest('tr').dataset.status = prev;
+            showPageToast('Network error — status not saved.', 'error');
+        });
+    }
+
+    function showPageToast(msg, type) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const colors = {
+            success: 'bg-green-500 text-white',
+            error:   'bg-red-500 text-white',
+        };
+        const el = document.createElement('div');
+        el.className = `toast-item pointer-events-auto flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl text-sm font-semibold leading-snug transition-all duration-300 ${colors[type] || 'bg-blue-600 text-white'}`;
+        el.setAttribute('role', 'alert');
+        el.innerHTML = `<span class="flex-1">${type === 'success' ? '✓' : '⚠'} ${msg}</span><button onclick="dismissToast(this.parentElement)" class="ml-2 opacity-70 hover:opacity-100 text-xl leading-none transition-opacity" aria-label="Dismiss">&times;</button>`;
+        container.appendChild(el);
+        // Slide in
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(110%)';
+        setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; }, 10);
+        setTimeout(() => dismissToast(el), 3000);
+    }
 </script>
 {% endblock %}
