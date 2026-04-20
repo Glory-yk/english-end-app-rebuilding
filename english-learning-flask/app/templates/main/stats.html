@@ -276,6 +276,62 @@
         </div>
     </div>
 
+    <!-- Vocabulary by Source Video -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+            <div>
+                <h3 class="font-bold text-lg">Vocabulary by Source Video</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Which videos have been your best vocabulary sources?</p>
+            </div>
+            {% if vocab_by_video %}
+            <span class="shrink-0 text-sm font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 self-start sm:self-auto">
+                {{ vocab_by_video|length }} video{{ 's' if vocab_by_video|length != 1 }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if vocab_by_video %}
+        <div class="space-y-3">
+            {% for v in vocab_by_video %}
+            {% set bar_pct = (v.word_count / vocab_by_video_max * 100)|round|int %}
+            <div class="group">
+                <div class="flex items-center justify-between mb-1 gap-3">
+                    <a href="{{ url_for('video.detail', video_id=v.id) }}"
+                       class="text-sm font-medium text-gray-700 group-hover:text-emerald-700 truncate transition-colors min-w-0 flex-1"
+                       title="{{ v.title }}">
+                        {{ v.title }}
+                    </a>
+                    <span class="shrink-0 text-sm font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full min-w-[3rem] text-center">
+                        {{ v.word_count }} word{{ 's' if v.word_count != 1 }}
+                    </span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div class="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500"
+                         style="width: {{ bar_pct }}%"
+                         role="progressbar"
+                         aria-valuenow="{{ v.word_count }}"
+                         aria-valuemax="{{ vocab_by_video_max }}"
+                         aria-label="{{ v.title }}: {{ v.word_count }} words saved"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if vocab_by_video|length == 8 %}
+        <p class="text-xs text-gray-400 mt-4 text-right">Showing top 8 videos · <a href="{{ url_for('video.index') }}" class="text-emerald-600 hover:underline">Browse all →</a></p>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-10 text-gray-400">
+            <div class="text-4xl mb-3">📺</div>
+            <p class="font-medium text-gray-500">No words saved from videos yet.</p>
+            <p class="text-sm mt-1">Save vocabulary words while watching videos to see your top sources here.</p>
+            <a href="{{ url_for('video.index') }}"
+               class="inline-block mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-lg text-sm transition">
+                Browse Videos →
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Achievements Panel -->
     {% set mastered_n = vocab_dist.get('mastered', 0) %}
     {% set ach_list = [

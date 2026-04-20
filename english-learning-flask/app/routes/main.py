@@ -290,6 +290,26 @@ def stats():
         .all()
     )
 
+    # Vocabulary by source video: top videos ranked by words saved from them
+    vocab_by_video_rows = (
+        db.session.query(
+            Video.id,
+            Video.title,
+            func.count(UserVocabulary.id).label('word_count')
+        )
+        .join(UserVocabulary, UserVocabulary.source_video == Video.id)
+        .filter(UserVocabulary.profile_id == profile.id)
+        .group_by(Video.id, Video.title)
+        .order_by(func.count(UserVocabulary.id).desc())
+        .limit(8)
+        .all()
+    )
+    vocab_by_video = [
+        {'id': r.id, 'title': r.title, 'word_count': r.word_count}
+        for r in vocab_by_video_rows
+    ]
+    vocab_by_video_max = max((r['word_count'] for r in vocab_by_video), default=1)
+
     return render_template('main/stats.html',
                          profile=profile,
                          total_hours=round(total_watched_sec / 3600, 1),
@@ -306,7 +326,9 @@ def stats():
                          best_day_mins=best_day_mins,
                          vocab_growth_labels=vocab_growth_labels,
                          vocab_growth_values=vocab_growth_values,
-                         struggling_words=struggling_words)
+                         struggling_words=struggling_words,
+                         vocab_by_video=vocab_by_video,
+                         vocab_by_video_max=vocab_by_video_max)
 
 
 @main_bp.route('/study-timer')
