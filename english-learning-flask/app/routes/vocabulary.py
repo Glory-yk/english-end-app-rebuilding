@@ -30,19 +30,34 @@ def index():
 def add_word():
     """Add a new word to the personal wordbook."""
     data = request.get_json()
-    word_text = data.get('word')
+    word_text = (data.get('word') or '').strip()
     video_id = data.get('video_id')
-    
+    meaning_ko = (data.get('meaning_ko') or '').strip()
+    pos = (data.get('pos') or '').strip() or None
+    example_en = (data.get('example_en') or '').strip() or None
+
+    if not word_text:
+        return jsonify({'status': 'error', 'message': 'Word is required.'}), 400
+
     profile = Profile.query.filter_by(user_id=current_user.id).first()
-    
+
     # 1. Find or create the central Vocabulary record
     vocab = Vocabulary.query.filter_by(word=word_text.lower()).first()
     if not vocab:
-        # 간단한 번역 로직 추가 (필요시 실제 API 연동)
-        meaning = f"Meaning of {word_text}" # 실제로는 여기서 사전 API 호출 가능
-        vocab = Vocabulary(word=word_text.lower(), meaning_ko=meaning)
+        meaning = meaning_ko or f"Meaning of {word_text}"
+        vocab = Vocabulary(
+            word=word_text.lower(),
+            meaning_ko=meaning,
+            pos=pos,
+            example_en=example_en,
+        )
         db.session.add(vocab)
         db.session.flush()
+    elif meaning_ko and vocab.meaning_ko.startswith('Meaning of '):
+        # Upgrade a placeholder meaning when the user provides a real one
+        vocab.meaning_ko = meaning_ko
+        if example_en and not vocab.example_en:
+            vocab.example_en = example_en
 
     # 2. Check if already in user's vocabulary
     user_word = UserVocabulary.query.filter_by(profile_id=profile.id, vocabulary_id=vocab.id).first()
@@ -52,12 +67,13 @@ def add_word():
             vocabulary_id=vocab.id,
             source_video=video_id,
             status='new',
-            next_review=datetime.utcnow() # 즉시 리뷰 가능하게 설정
+            next_review=datetime.utcnow(),
         )
         db.session.add(user_word)
         db.session.commit()
         return jsonify({'status': 'added', 'message': f"'{word_text}' added to your wordbook!"})
-    
+
+    db.session.commit()
     return jsonify({'status': 'exists', 'message': f"'{word_text}' is already in your wordbook."})
 
 @vocab_bp.route('/remove/<word_id>', methods=['POST'])

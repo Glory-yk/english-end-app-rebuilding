@@ -2,9 +2,17 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">My Personal Wordbook</h1>
-        <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+        <div>
+            <h1 class="text-3xl font-bold">My Personal Wordbook</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ words|length }} word{{ 's' if words|length != 1 }} saved</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="openAddModal()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2 shadow-sm transition"
+                    aria-label="Add a word manually">
+                &#43; Add Word
+            </button>
             <a href="{{ url_for('vocab.export_csv') }}"
                class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded border border-gray-300 flex items-center gap-2">
                 &#8659; Export CSV
@@ -16,12 +24,87 @@
             </a>
             <a href="{{ url_for('vocab.flashcards') }}"
                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2">
-                &#x1F0CF; Flashcard Mode
+                &#x1F0CF; Flashcards
             </a>
             <a href="{{ url_for('vocab.review') }}"
                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Start Review (Spaced Repetition)
+                SRS Review
             </a>
+        </div>
+    </div>
+
+    <!-- ── Add Word Modal ─────────────────────────────────────────────────── -->
+    <div id="add-word-modal"
+         class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black bg-opacity-40" onclick="closeAddModal()"></div>
+        <!-- Panel -->
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 id="modal-title" class="text-xl font-black text-gray-800">Add a Word</h2>
+                <button onclick="closeAddModal()"
+                        class="text-gray-400 hover:text-gray-700 text-2xl leading-none transition"
+                        aria-label="Close">&times;</button>
+            </div>
+            <form id="add-word-form" onsubmit="submitAddWord(event)" novalidate>
+                <!-- Word -->
+                <div class="mb-4">
+                    <label for="aw-word" class="block text-sm font-bold text-gray-700 mb-1">
+                        Word <span class="text-red-500">*</span>
+                    </label>
+                    <input id="aw-word" type="text" required autocomplete="off"
+                           placeholder="e.g. serendipity"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <p id="aw-word-err" class="text-xs text-red-500 mt-1 hidden">Please enter a word.</p>
+                </div>
+                <!-- Meaning -->
+                <div class="mb-4">
+                    <label for="aw-meaning" class="block text-sm font-bold text-gray-700 mb-1">
+                        Meaning <span class="text-gray-400 font-normal">(your own definition — any language)</span>
+                    </label>
+                    <input id="aw-meaning" type="text" autocomplete="off"
+                           placeholder="e.g. 행운의 발견 / happy accident"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <!-- Part of Speech -->
+                <div class="mb-4">
+                    <label for="aw-pos" class="block text-sm font-bold text-gray-700 mb-1">Part of speech</label>
+                    <select id="aw-pos"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                        <option value="">— optional —</option>
+                        <option value="noun">Noun</option>
+                        <option value="verb">Verb</option>
+                        <option value="adj">Adjective</option>
+                        <option value="adv">Adverb</option>
+                        <option value="phrase">Phrase</option>
+                        <option value="idiom">Idiom</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <!-- Example sentence -->
+                <div class="mb-5">
+                    <label for="aw-example" class="block text-sm font-bold text-gray-700 mb-1">
+                        Example sentence <span class="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <input id="aw-example" type="text" autocomplete="off"
+                           placeholder="e.g. It was serendipity that brought them together."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <!-- Status message -->
+                <p id="aw-status" class="text-sm mb-3 hidden"></p>
+                <!-- Actions -->
+                <div class="flex gap-3 justify-end">
+                    <button type="button" onclick="closeAddModal()"
+                            class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button id="aw-submit" type="submit"
+                            class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-sm">
+                        Add to Wordbook
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -156,9 +239,23 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                        Your wordbook is empty. Add words while watching videos!
+                <tr id="empty-wordbook-row">
+                    <td colspan="5" class="px-6 py-16 text-center">
+                        <div class="text-5xl mb-4">📖</div>
+                        <h3 class="text-lg font-bold text-gray-700 mb-2">Your wordbook is empty</h3>
+                        <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
+                            Add words while watching videos, or click <strong>+ Add Word</strong> to add any word directly.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button onclick="openAddModal()"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm text-sm">
+                                &#43; Add a Word Now
+                            </button>
+                            <a href="{{ url_for('video.index') }}"
+                               class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-5 rounded-lg transition border border-gray-300 text-sm">
+                                Browse Videos
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -395,6 +492,91 @@
         el.style.transform = 'translateX(110%)';
         setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; }, 10);
         setTimeout(() => dismissToast(el), 3000);
+    }
+
+    // ── Add Word Modal ────────────────────────────────────────────────────────
+    function openAddModal() {
+        const modal = document.getElementById('add-word-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('aw-word').focus();
+        document.getElementById('aw-status').classList.add('hidden');
+    }
+
+    function closeAddModal() {
+        const modal = document.getElementById('add-word-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('add-word-form').reset();
+        document.getElementById('aw-word-err').classList.add('hidden');
+        document.getElementById('aw-status').classList.add('hidden');
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAddModal();
+    });
+
+    async function submitAddWord(e) {
+        e.preventDefault();
+        const wordEl    = document.getElementById('aw-word');
+        const meaningEl = document.getElementById('aw-meaning');
+        const posEl     = document.getElementById('aw-pos');
+        const exampleEl = document.getElementById('aw-example');
+        const statusEl  = document.getElementById('aw-status');
+        const submitBtn = document.getElementById('aw-submit');
+        const wordErrEl = document.getElementById('aw-word-err');
+
+        const word = wordEl.value.trim();
+        if (!word) {
+            wordErrEl.classList.remove('hidden');
+            wordEl.focus();
+            return;
+        }
+        wordErrEl.classList.add('hidden');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding…';
+        statusEl.classList.add('hidden');
+
+        try {
+            const resp = await fetch('{{ url_for("vocab.add_word") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    word:       word,
+                    meaning_ko: meaningEl.value.trim() || null,
+                    pos:        posEl.value || null,
+                    example_en: exampleEl.value.trim() || null,
+                }),
+            });
+            const data = await resp.json();
+
+            if (data.status === 'added') {
+                closeAddModal();
+                showPageToast(data.message, 'success');
+                // Reload after brief delay so the user sees the toast
+                setTimeout(() => location.reload(), 800);
+            } else if (data.status === 'exists') {
+                statusEl.textContent = data.message;
+                statusEl.className = 'text-sm mb-3 text-amber-600 font-semibold';
+                statusEl.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add to Wordbook';
+            } else {
+                statusEl.textContent = data.message || 'Something went wrong.';
+                statusEl.className = 'text-sm mb-3 text-red-600';
+                statusEl.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add to Wordbook';
+            }
+        } catch {
+            statusEl.textContent = 'Network error — please try again.';
+            statusEl.className = 'text-sm mb-3 text-red-600';
+            statusEl.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add to Wordbook';
+        }
     }
 </script>
 {% endblock %}
