@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models.video import Channel
+from app.models.video import Channel, Video
 from app.models.profile import Profile
 from app.services.youtube_service import YouTubeService
 from app import db
@@ -71,8 +71,23 @@ def add():
 def view(channel_id):
     """View recent videos from a specific channel."""
     channel = Channel.query.get_or_404(channel_id)
-    videos = YouTubeService.fetch_channel_videos(channel.youtube_channel_id)
-    return render_template('channels/view.html', channel=channel, videos=videos)
+    sort_by = request.args.get('sort', 'newest')
+    videos = YouTubeService.fetch_channel_videos(channel.youtube_channel_id, sort_by=sort_by)
+
+    # Look up which fetched videos already exist in the library (one query)
+    yt_ids = [v['id'] for v in videos if v.get('id')]
+    existing_rows = Video.query.filter(Video.youtube_id.in_(yt_ids)).with_entities(
+        Video.youtube_id, Video.id
+    ).all()
+    library_map = {row.youtube_id: row.id for row in existing_rows}
+
+    return render_template(
+        'channels/view.html',
+        channel=channel,
+        videos=videos,
+        sort_by=sort_by,
+        library_map=library_map,
+    )
 
 @channels_bp.route('/edit/<channel_id>', methods=['POST'])
 @login_required
