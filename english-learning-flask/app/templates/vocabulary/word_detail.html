@@ -33,30 +33,25 @@
                     {% if vocab.phonetic %}
                     <span class="text-gray-400 text-base font-mono">{{ vocab.phonetic }}</span>
                     {% endif %}
-                    {% if vocab.pos %}
-                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
-                        {{ vocab.pos }}
-                    </span>
-                    {% endif %}
+                    <span id="wd-pos-badge"
+                          class="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide{% if not vocab.pos %} hidden{% endif %}">{{ vocab.pos or '' }}</span>
                 </div>
 
                 <!-- Korean meaning -->
-                <p class="mt-4 text-2xl font-semibold text-gray-800">{{ vocab.meaning_ko }}</p>
+                <p id="wd-meaning" class="mt-4 text-2xl font-semibold text-gray-800">{{ vocab.meaning_ko }}</p>
 
                 <!-- Example sentence -->
-                {% if vocab.example_en %}
-                <div class="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div id="wd-example-section" class="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100{% if not vocab.example_en %} hidden{% endif %}">
                     <p class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-1">Example</p>
-                    <p class="text-gray-700 italic leading-relaxed">{{ vocab.example_en }}</p>
+                    <p id="wd-example-text" class="text-gray-700 italic leading-relaxed">{{ vocab.example_en or '' }}</p>
                     {% if vocab.example_ko %}
                     <p class="text-gray-400 text-sm mt-1">{{ vocab.example_ko }}</p>
                     {% endif %}
                 </div>
-                {% endif %}
             </div>
 
-            <!-- Status badge -->
-            <div class="shrink-0 text-center sm:text-right">
+            <!-- Status badge + edit button -->
+            <div class="shrink-0 text-center sm:text-right flex flex-col items-center sm:items-end gap-2">
                 <span class="inline-block px-4 py-2 rounded-full text-sm font-bold
                     {% if user_word.status == 'mastered' %}bg-green-100 text-green-700
                     {% elif user_word.status == 'review' %}bg-yellow-100 text-yellow-700
@@ -64,6 +59,11 @@
                     {% else %}bg-gray-100 text-gray-600{% endif %}">
                     {{ user_word.status | capitalize }}
                 </span>
+                <button onclick="openEditModal()"
+                        class="text-gray-400 hover:text-blue-600 text-sm font-medium flex items-center gap-1 transition"
+                        aria-label="Edit meaning and example for {{ vocab.word }}">
+                    &#9998; Edit
+                </button>
             </div>
         </div>
     </div>
@@ -188,6 +188,63 @@
     </div>
 </div>
 
+<!-- ── Edit Word Modal ────────────────────────────────────────────────── -->
+<div id="edit-word-modal"
+     class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="absolute inset-0 bg-black bg-opacity-40" onclick="closeEditModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h2 id="edit-modal-title" class="text-xl font-black text-gray-800">Edit "{{ vocab.word }}"</h2>
+            <button onclick="closeEditModal()"
+                    class="text-gray-400 hover:text-gray-700 text-2xl leading-none transition"
+                    aria-label="Close">&times;</button>
+        </div>
+        <form id="edit-word-form" onsubmit="submitEditWord(event)" novalidate>
+            <div class="mb-4">
+                <label for="ew-meaning" class="block text-sm font-bold text-gray-700 mb-1">
+                    Meaning <span class="text-red-500">*</span>
+                </label>
+                <input id="ew-meaning" type="text" required autocomplete="off"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <p id="ew-meaning-err" class="text-xs text-red-500 mt-1 hidden">Meaning is required.</p>
+            </div>
+            <div class="mb-4">
+                <label for="ew-pos" class="block text-sm font-bold text-gray-700 mb-1">Part of speech</label>
+                <select id="ew-pos"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                    <option value="">— optional —</option>
+                    <option value="noun">Noun</option>
+                    <option value="verb">Verb</option>
+                    <option value="adj">Adjective</option>
+                    <option value="adv">Adverb</option>
+                    <option value="phrase">Phrase</option>
+                    <option value="idiom">Idiom</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="mb-5">
+                <label for="ew-example" class="block text-sm font-bold text-gray-700 mb-1">
+                    Example sentence <span class="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input id="ew-example" type="text" autocomplete="off"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <p id="ew-status" class="text-sm mb-3 hidden"></p>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeEditModal()"
+                        class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-bold hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button id="ew-submit" type="submit"
+                        class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-sm">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function pronounce(word) {
     if ('speechSynthesis' in window) {
@@ -198,9 +255,106 @@ function pronounce(word) {
         speechSynthesis.speak(utt);
     }
 }
-// Auto-pronounce on load
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () { pronounce('{{ vocab.word }}'); }, 400);
 });
+
+// ── Inline word editor ───────────────────────────────────────────────────
+let editMeaning = {{ vocab.meaning_ko | tojson }};
+let editPos     = {{ (vocab.pos or '') | tojson }};
+let editExample = {{ (vocab.example_en or '') | tojson }};
+const EDIT_WORD_ID = {{ user_word.id }};
+
+function openEditModal() {
+    document.getElementById('ew-meaning').value = editMeaning;
+    document.getElementById('ew-pos').value = editPos;
+    document.getElementById('ew-example').value = editExample;
+    document.getElementById('ew-meaning-err').classList.add('hidden');
+    document.getElementById('ew-status').classList.add('hidden');
+    const btn = document.getElementById('ew-submit');
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+    document.getElementById('edit-word-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('ew-meaning').select(), 50);
+}
+
+function closeEditModal() {
+    document.getElementById('edit-word-modal').classList.add('hidden');
+}
+
+async function submitEditWord(event) {
+    event.preventDefault();
+    const meaning = document.getElementById('ew-meaning').value.trim();
+    const pos     = document.getElementById('ew-pos').value;
+    const example = document.getElementById('ew-example').value.trim();
+
+    if (!meaning) {
+        document.getElementById('ew-meaning-err').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('ew-meaning-err').classList.add('hidden');
+
+    const btn = document.getElementById('ew-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+        const res = await fetch(`/vocab/edit-word/${EDIT_WORD_ID}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({meaning_ko: meaning, pos: pos, example_en: example}),
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            // Update live display
+            document.getElementById('wd-meaning').textContent = meaning;
+
+            const badge = document.getElementById('wd-pos-badge');
+            if (pos) { badge.textContent = pos; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+
+            const exSection = document.getElementById('wd-example-section');
+            const exText    = document.getElementById('wd-example-text');
+            if (example) { exText.textContent = example; exSection.classList.remove('hidden'); }
+            else { exSection.classList.add('hidden'); }
+
+            // Keep local state in sync so re-opening the modal shows new values
+            editMeaning = meaning;
+            editPos     = pos;
+            editExample = example;
+
+            closeEditModal();
+            showInlineToast('Word updated successfully!');
+        } else {
+            showEditStatus(data.message || 'Failed to save.');
+        }
+    } catch (_) {
+        showEditStatus('Network error — please try again.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+}
+
+function showEditStatus(msg) {
+    const el = document.getElementById('ew-status');
+    el.textContent = msg;
+    el.className = 'text-sm mb-3 text-red-500';
+    el.classList.remove('hidden');
+}
+
+function showInlineToast(msg) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'pointer-events-auto flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl text-sm font-semibold leading-snug bg-green-500 text-white transition-all duration-300';
+    el.style.cssText = 'opacity:0;transform:translateX(110%)';
+    el.innerHTML = '<span class="flex-1">&#10003; ' + msg + '</span>';
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; }, 10);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(110%)'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
 </script>
 {% endblock %}

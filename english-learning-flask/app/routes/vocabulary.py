@@ -204,6 +204,45 @@ def set_status(word_id):
     return jsonify({'status': 'ok', 'new_status': new_status})
 
 
+@vocab_bp.route('/edit-word/<int:word_id>', methods=['POST'])
+@login_required
+def edit_word(word_id):
+    """Update meaning, POS, and example sentence for a word in the user's wordbook.
+
+    Accepts JSON: {"meaning_ko": "...", "pos": "...", "example_en": "..."}
+    Updates the shared Vocabulary record (same behaviour as the add-word modal
+    which already upgrades placeholder meanings on existing records).
+    """
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+    if not profile:
+        return jsonify({'status': 'error', 'message': 'No profile'}), 404
+
+    user_word = UserVocabulary.query.filter_by(
+        id=word_id, profile_id=profile.id
+    ).first_or_404()
+
+    data = request.get_json(silent=True) or {}
+    meaning_ko = (data.get('meaning_ko') or '').strip()
+    pos = (data.get('pos') or '').strip() or None
+    example_en = (data.get('example_en') or '').strip() or None
+
+    if not meaning_ko:
+        return jsonify({'status': 'error', 'message': 'Meaning is required.'}), 400
+
+    vocab = user_word.vocabulary
+    vocab.meaning_ko = meaning_ko
+    vocab.pos = pos
+    vocab.example_en = example_en
+    db.session.commit()
+
+    return jsonify({
+        'status': 'ok',
+        'meaning_ko': meaning_ko,
+        'pos': pos or '',
+        'example_en': example_en or '',
+    })
+
+
 @vocab_bp.route('/review')
 @login_required
 def review():
