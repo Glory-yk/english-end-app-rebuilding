@@ -107,6 +107,97 @@
     .streak-flame { display: inline-block; animation: flicker 0.9s ease-in-out infinite; }
 </style>
 
+    <!-- This Week at a Glance -->
+    {% if study_min_this_week > 0 or words_this_week > 0 or reviews_this_week > 0 or study_min_prev_week > 0 or words_prev_week > 0 or reviews_prev_week > 0 %}
+    <div class="bg-white rounded-xl shadow p-5 mb-10 border border-gray-100">
+        <h2 class="text-base font-bold text-gray-800 flex items-center gap-2 mb-4">
+            <span aria-hidden="true">📊</span> This Week at a Glance
+            <span class="ml-auto text-xs font-normal text-gray-400">vs. previous 7 days</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            {# Study time metric #}
+            {% set sm_delta = study_min_this_week - study_min_prev_week %}
+            {% if study_min_prev_week > 0 %}
+                {% set sm_pct = ((sm_delta / study_min_prev_week) * 100) | round(0) | int %}
+            {% else %}
+                {% set sm_pct = none %}
+            {% endif %}
+            <div class="bg-blue-50 rounded-xl p-4 flex flex-col gap-1">
+                <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide">Study Time</p>
+                <p class="text-2xl font-black text-gray-900">
+                    {{ study_min_this_week }}<span class="text-sm font-normal text-gray-400 ml-1">min</span>
+                </p>
+                <div class="flex items-center gap-1 text-xs mt-0.5">
+                    {% if sm_pct is not none and sm_delta != 0 %}
+                        <span class="{{ 'text-green-600 font-bold' if sm_delta > 0 else 'text-red-500 font-bold' }}">
+                            {{ '↑' if sm_delta > 0 else '↓' }} {{ sm_pct | abs }}%
+                        </span>
+                        <span class="text-gray-400">vs {{ study_min_prev_week }} min last week</span>
+                    {% elif sm_pct == 0 %}
+                        <span class="text-gray-400">→ same as last week</span>
+                    {% else %}
+                        <span class="text-gray-400">{{ study_min_prev_week }} min last week</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Words added metric #}
+            {% set wk_delta = words_this_week - words_prev_week %}
+            {% if words_prev_week > 0 %}
+                {% set wk_pct = ((wk_delta / words_prev_week) * 100) | round(0) | int %}
+            {% else %}
+                {% set wk_pct = none %}
+            {% endif %}
+            <div class="bg-emerald-50 rounded-xl p-4 flex flex-col gap-1">
+                <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Words Added</p>
+                <p class="text-2xl font-black text-gray-900">
+                    {{ words_this_week }}<span class="text-sm font-normal text-gray-400 ml-1">words</span>
+                </p>
+                <div class="flex items-center gap-1 text-xs mt-0.5">
+                    {% if wk_pct is not none and wk_delta != 0 %}
+                        <span class="{{ 'text-green-600 font-bold' if wk_delta > 0 else 'text-red-500 font-bold' }}">
+                            {{ '↑' if wk_delta > 0 else '↓' }} {{ wk_pct | abs }}%
+                        </span>
+                        <span class="text-gray-400">vs {{ words_prev_week }} last week</span>
+                    {% elif wk_pct == 0 %}
+                        <span class="text-gray-400">→ same as last week</span>
+                    {% else %}
+                        <span class="text-gray-400">{{ words_prev_week }} last week</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Reviews done metric #}
+            {% set rv_delta = reviews_this_week - reviews_prev_week %}
+            {% if reviews_prev_week > 0 %}
+                {% set rv_pct = ((rv_delta / reviews_prev_week) * 100) | round(0) | int %}
+            {% else %}
+                {% set rv_pct = none %}
+            {% endif %}
+            <div class="bg-violet-50 rounded-xl p-4 flex flex-col gap-1">
+                <p class="text-xs font-semibold text-violet-600 uppercase tracking-wide">Reviews Done</p>
+                <p class="text-2xl font-black text-gray-900">
+                    {{ reviews_this_week }}<span class="text-sm font-normal text-gray-400 ml-1">cards</span>
+                </p>
+                <div class="flex items-center gap-1 text-xs mt-0.5">
+                    {% if rv_pct is not none and rv_delta != 0 %}
+                        <span class="{{ 'text-green-600 font-bold' if rv_delta > 0 else 'text-red-500 font-bold' }}">
+                            {{ '↑' if rv_delta > 0 else '↓' }} {{ rv_pct | abs }}%
+                        </span>
+                        <span class="text-gray-400">vs {{ reviews_prev_week }} last week</span>
+                    {% elif rv_pct == 0 %}
+                        <span class="text-gray-400">→ same as last week</span>
+                    {% else %}
+                        <span class="text-gray-400">{{ reviews_prev_week }} last week</span>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Continue Learning Card -->
     {% if sessions and sessions[0].video %}
     {% set last_vid = sessions[0].video %}

@@ -142,6 +142,45 @@ def index():
                 })
             review_forecast_max = max((d['count'] for d in review_forecast), default=0)
 
+        # Weekly progress comparison (this week vs previous 7 days)
+        week_start = (datetime.utcnow() - timedelta(days=6)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        prev_week_start = week_start - timedelta(days=7)
+
+        words_this_week = UserVocabulary.query.filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.created_at >= week_start,
+        ).count()
+        words_prev_week = UserVocabulary.query.filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.created_at >= prev_week_start,
+            UserVocabulary.created_at < week_start,
+        ).count()
+
+        study_sec_this_week = db.session.query(func.sum(LearningSession.watched_sec)).filter(
+            LearningSession.profile_id == profile.id,
+            LearningSession.created_at >= week_start,
+        ).scalar() or 0
+        study_min_this_week = study_sec_this_week // 60
+
+        study_sec_prev_week = db.session.query(func.sum(LearningSession.watched_sec)).filter(
+            LearningSession.profile_id == profile.id,
+            LearningSession.created_at >= prev_week_start,
+            LearningSession.created_at < week_start,
+        ).scalar() or 0
+        study_min_prev_week = study_sec_prev_week // 60
+
+        reviews_this_week = UserVocabulary.query.filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.last_reviewed >= week_start,
+        ).count()
+        reviews_prev_week = UserVocabulary.query.filter(
+            UserVocabulary.profile_id == profile.id,
+            UserVocabulary.last_reviewed >= prev_week_start,
+            UserVocabulary.last_reviewed < week_start,
+        ).count()
+
         return render_template('main/dashboard.html',
                                profile=profile,
                                sessions=recent_sessions,
@@ -155,7 +194,13 @@ def index():
                                streak_days=streak_days,
                                word_count=word_count,
                                review_forecast=review_forecast,
-                               review_forecast_max=review_forecast_max)
+                               review_forecast_max=review_forecast_max,
+                               words_this_week=words_this_week,
+                               words_prev_week=words_prev_week,
+                               study_min_this_week=study_min_this_week,
+                               study_min_prev_week=study_min_prev_week,
+                               reviews_this_week=reviews_this_week,
+                               reviews_prev_week=reviews_prev_week)
     return render_template('main/landing.html')
 
 @main_bp.route('/stats')
