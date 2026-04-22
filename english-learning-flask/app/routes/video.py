@@ -347,17 +347,23 @@ def detail(video_id):
     saved_words_json = '[]'
     video_saved_words = []
     suggested_words = []
+    word_info_json = '{}'
     if profile:
-        # Fetch only the word strings we need — avoids loading full ORM objects
-        # for every vocabulary entry when all we need is the lowercase word.
+        # Fetch word, meaning, and uv.id so the subtitle panel can highlight saved
+        # words and show their Korean meaning on hover without extra round-trips.
         _word_rows = (
-            db.session.query(Vocabulary.word)
+            db.session.query(Vocabulary.word, Vocabulary.meaning_ko, UserVocabulary.id)
             .join(UserVocabulary, UserVocabulary.vocabulary_id == Vocabulary.id)
             .filter(UserVocabulary.profile_id == profile.id)
             .all()
         )
         saved_words_list = [row[0].lower() for row in _word_rows]
         saved_words_json = json.dumps(saved_words_list)
+        # {word_lower: {meaning, uv_id}} — used by the Word Peek tooltip in the subtitle panel
+        word_info_json = json.dumps(
+            {row[0].lower(): {'meaning': row[1], 'uv_id': row[2]} for row in _word_rows},
+            ensure_ascii=False,
+        )
 
         video_saved_words = (
             UserVocabulary.query
@@ -416,6 +422,7 @@ def detail(video_id):
         video=video,
         subtitles=subtitles,
         saved_words_json=saved_words_json,
+        word_info_json=word_info_json,
         video_saved_words=video_saved_words,
         similar_videos=similar_videos,
         watched_next_ids=watched_next_ids,

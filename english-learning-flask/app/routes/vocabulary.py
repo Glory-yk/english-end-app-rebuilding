@@ -71,10 +71,20 @@ def add_word():
         )
         db.session.add(user_word)
         db.session.commit()
-        return jsonify({'status': 'added', 'message': f"'{word_text}' added to your wordbook!"})
+        return jsonify({
+            'status': 'added',
+            'message': f"'{word_text}' added to your wordbook!",
+            'uv_id': user_word.id,
+            'meaning': vocab.meaning_ko,
+        })
 
     db.session.commit()
-    return jsonify({'status': 'exists', 'message': f"'{word_text}' is already in your wordbook."})
+    return jsonify({
+        'status': 'exists',
+        'message': f"'{word_text}' is already in your wordbook.",
+        'uv_id': user_word.id,
+        'meaning': vocab.meaning_ko,
+    })
 
 @vocab_bp.route('/remove/<word_id>', methods=['POST'])
 @login_required
