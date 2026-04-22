@@ -206,7 +206,7 @@ def set_status(word_id):
         user_word.next_review = now
         user_word.ease_factor = 2.5
         user_word.repetitions = 0
-        user_word.interval = 0
+        user_word.interval_days = 0
     elif new_status in ('learning', 'review'):
         user_word.next_review = now
 

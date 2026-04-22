@@ -121,11 +121,27 @@
         <!-- Subtitles Sidebar -->
         <div class="lg:w-1/3">
             <div class="bg-white rounded-lg shadow-lg flex flex-col h-[70vh]">
-                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg flex items-center justify-between shrink-0">
-                    <h2 class="text-xl font-bold">Subtitles</h2>
-                    <span id="saved-word-badge" class="{% if not video_saved_words %}hidden{% endif %} text-xs font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
-                        ✓ <span id="saved-count-num">{{ video_saved_words | length }}</span> saved
-                    </span>
+                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg shrink-0">
+                    <!-- Title + saved badge row -->
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xl font-bold">Subtitles</h2>
+                        <span id="saved-word-badge" class="{% if not video_saved_words %}hidden{% endif %} text-xs font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                            ✓ <span id="saved-count-num">{{ video_saved_words | length }}</span> saved
+                        </span>
+                    </div>
+                    <!-- Transcript search row -->
+                    <div class="relative" role="search" aria-label="Search subtitle text">
+                        <span class="absolute inset-y-0 left-2.5 flex items-center text-gray-400 pointer-events-none text-sm select-none" aria-hidden="true">&#128269;</span>
+                        <input id="sub-search" type="search"
+                               placeholder="Search subtitles… (press /)"
+                               oninput="filterSubtitles()"
+                               autocomplete="off"
+                               class="w-full pl-8 pr-20 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                               aria-label="Search subtitle lines">
+                        <span id="sub-match-count"
+                              class="absolute inset-y-0 right-2.5 flex items-center text-xs text-gray-400 pointer-events-none select-none whitespace-nowrap"
+                              aria-live="polite"></span>
+                    </div>
                 </div>
                 <div id="subtitle-list" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     {% for sub in subtitles %}
@@ -541,11 +557,13 @@
 
     function updateActiveSubtitle() {
         if (!player) return;
+        const searchActive = (document.getElementById('sub-search').value || '').trim().length > 0;
         const currentTimeMs = player.getCurrentTime() * 1000;
         const items = document.querySelectorAll('.subtitle-item');
         const container = document.getElementById('subtitle-list');
 
         items.forEach(item => {
+            if (item.style.display === 'none') return; // skip filtered-out lines
             const start = parseInt(item.getAttribute('data-start'));
             const end = parseInt(item.getAttribute('data-end'));
 
@@ -554,13 +572,14 @@
                 if (!item.classList.contains('active-sub')) {
                     item.classList.add('bg-blue-100', 'border-blue-300', 'active-sub');
 
-                    // Scroll the subtitle panel so the active line is centred
-                    const itemTop = item.offsetTop;
-                    const itemHeight = item.offsetHeight;
-                    const containerHeight = container.clientHeight;
-                    const targetScrollTop = itemTop - (containerHeight / 2) + (itemHeight / 2);
-
-                    container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                    // Don't auto-scroll while the user is searching (their view is intentional)
+                    if (!searchActive) {
+                        const itemTop = item.offsetTop;
+                        const itemHeight = item.offsetHeight;
+                        const containerHeight = container.clientHeight;
+                        const targetScrollTop = itemTop - (containerHeight / 2) + (itemHeight / 2);
+                        container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                    }
                 }
             } else {
                 item.classList.remove('bg-blue-100', 'border-blue-300', 'active-sub');
@@ -692,6 +711,71 @@
         document.title = originalTitle;
         renderPom();
     }
+
+    // ── Subtitle transcript search ────────────────────────────────────────────
+    function filterSubtitles() {
+        const q = (document.getElementById('sub-search').value || '').trim().toLowerCase();
+        const items = document.querySelectorAll('.subtitle-item');
+        const counter = document.getElementById('sub-match-count');
+        const total = items.length;
+        let matches = 0;
+
+        items.forEach(item => {
+            // Clear previous highlights
+            item.querySelectorAll('[data-sub-hl]').forEach(s => {
+                s.style.backgroundColor = '';
+                s.style.fontWeight = '';
+                s.removeAttribute('data-sub-hl');
+            });
+
+            const text = item.querySelector('p').textContent.toLowerCase();
+            const show = !q || text.includes(q);
+            item.style.display = show ? '' : 'none';
+
+            if (show) {
+                matches++;
+                if (q) {
+                    // Highlight word-spans whose visible text contains the query
+                    item.querySelectorAll('.word-span').forEach(span => {
+                        if ((span.textContent || '').toLowerCase().includes(q)) {
+                            span.style.backgroundColor = '#fef08a';
+                            span.style.fontWeight = '700';
+                            span.setAttribute('data-sub-hl', '1');
+                        }
+                    });
+                }
+            }
+        });
+
+        if (counter) {
+            if (!q) {
+                counter.textContent = '';
+            } else if (matches === 0) {
+                counter.textContent = 'no matches';
+                counter.style.color = '#ef4444';
+            } else {
+                counter.textContent = `${matches} / ${total}`;
+                counter.style.color = '';
+            }
+        }
+    }
+
+    // Press '/' to focus subtitle search; Escape to clear and blur it
+    document.addEventListener('keydown', e => {
+        const tag = (document.activeElement || {}).tagName || '';
+        if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+            e.preventDefault();
+            const inp = document.getElementById('sub-search');
+            if (inp) { inp.focus(); inp.select(); }
+        } else if (e.key === 'Escape') {
+            const inp = document.getElementById('sub-search');
+            if (inp && document.activeElement === inp) {
+                inp.value = '';
+                filterSubtitles();
+                inp.blur();
+            }
+        }
+    });
 
     // ── Suggested vocabulary quick-save ───────────────────────────────────────
     function quickSave(word, btn) {
